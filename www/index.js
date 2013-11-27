@@ -1,3 +1,63 @@
+var selectDistrInputBinding = new Shiny.InputBinding();
+$.extend(selectDistrInputBinding, {
+	find: function(scope) {
+      return $(scope).find('.shiny-distr-input');
+    },
+	getId: function(el) {
+      return Shiny.InputBinding.prototype.getId.call(this, el) || el.name;
+    },
+	getValue: function(el) {
+		var params = new Array();
+		var id = $(el).attr("id");
+		$("#distrInputs"+id).find("input[type=number]").each(function() {
+			params.push({name: $(this).attr("name"), value: $(this).val()});
+		});
+		return({distribution: parseInt($("#select"+id).val())+1, params: params});
+	},
+	setValue: function(el, value) {
+		$(el).attr("value", value);
+    },
+	subscribe: function(el, callback) {
+	  var id = $(el).attr("id");
+	  var self = this;
+	  $("#select"+id).on("change", function(event) {
+		event.stopImmediatePropagation();
+		$("#distrInputs"+id).empty();
+		var selected = $(this).val();
+		var parameters = self.distributions[selected].params;
+		for(var i=0; i<parameters.length; i++) {
+			$("#distrInputs"+id).append("<label>"+parameters[i].name+ ": </label><input id='distrInput-"+parameters[i].name+ "-" + id + "' name='"+ parameters[i].name + "' value='"+ parameters[i].value +"' style='width:4.5em;' type='number'/>");
+			$("#distrInput-"+parameters[i].name + "-" + id).on("change", function(event) {
+				callback(false);
+			});
+		}
+		callback(false);
+	  });
+    },
+    unsubscribe: function(el) {
+      $(el).off('.selectDistrInputBinding');
+    },
+	receiveMessage: function(el, data) {
+		var id = $(el).attr("id");
+		if (data.hasOwnProperty('distributions')) {
+			this.distributions = data.distributions;
+			for (var i=0; i<data.distributions.length; i++) {
+				$("#select"+id).append("<option value=" + i + ">" + data.distributions[i].name + "</option>");
+			}
+		}
+		$("#select"+id).trigger('change');
+	},
+	getState: function(el) {
+		return($(el).attr("value"));
+    },
+	initialize: function(el) {
+		this.distributions = new Array();
+		var id = $(el).attr("id");
+		$(el).append("<select id='select" + id + "' style='display:inline'></select>").append("<div id='distrInputs" + id + "' style='display:inline; height:20px; width:auto;'></div>");
+	}
+});
+Shiny.inputBindings.register(selectDistrInputBinding, 'shiny.selectDistrInputBinding');
+
 //Creamos una especializacion de TextInput para introducir vectores numéricos
 var vectorInputBinding = new Shiny.InputBinding();
 $.extend(vectorInputBinding, {
@@ -14,6 +74,9 @@ $.extend(vectorInputBinding, {
 		res.push(parseInt(numbers[i]));
       return (res);
     },
+	setValue: function(el, value) {
+      el.value = value;
+    },
 	subscribe: function(el, callback) {
       $(el).on('change.vectorInputBinding', function(event) {
         callback(false);
@@ -23,10 +86,12 @@ $.extend(vectorInputBinding, {
       $(el).off('.vectorInputBinding');
     },
 	receiveMessage: function(el, data) {
+		console.log("Recivido vector: " + data);
 		  if (data.hasOwnProperty('value')) {
 			res = "";
-			for(v in data.matrix)
-				res += v + "; "
+			for(var i=0; i<data.value.length; i++) {
+				res += data.value[i] + "; ";
+			}
 			this.setValue(el, res.substr(0, res.length-2));
 		 }
 		 
@@ -97,6 +162,18 @@ $.extend(matrixInputBinding, {
 			callback(false);
 		});
 	},
+	receiveMessage: function(el, data) {
+		  var id = $(el).attr("id");	
+		  console.log(data);
+		  if (data.hasOwnProperty('value') && data.hasOwnProperty('size')) {
+			$("#"+id+"-numNodes").val(data.size).trigger("change");
+			for(var i=0; i<data.size; i++)
+				for(var j=0; j<data.size; j++) {
+					$("#"+id+"-table-"+(i+1)+"-"+(j+1)+"-input").val(data.value[i+1][j]).trigger("change");
+				}
+			$(el).trigger("send.matrixInputBinding");
+		  }
+	},
 	initialize: function(el) {	
 		if(!this.hasOwnProperty("matrix"))
 			this.matrix = new Array();	
@@ -132,7 +209,6 @@ $.extend(matrixInputBinding, {
 				}	
 			}
 		}
-		console.log(this.matrix[id].toString());
 		this._expandTable(id, 0 , nodes);
 		var self = this;
 		$("#" + id + "-manualDialog").dialog({
@@ -264,7 +340,6 @@ $.extend(networkOutputBinding, {
     renderValue: function(el, data) {
 		var id = $(el).attr("id");
 		if(!this.hasOwnProperty("particleSystem")) {
-			console.log("No tiene particleSystem");
 			this.particleSystem = new Array();
 		}
 		if (data != null) {
@@ -272,10 +347,17 @@ $.extend(networkOutputBinding, {
 			$(el).append("<canvas id='" + id + "-graphcanvas' width=850 height=540></canvas>");
 			this.particleSystem[id] = arbor.ParticleSystem(1000, 50, 0.5, true);
 			this.particleSystem[id].renderer = new this._Renderer("#" + id + "-graphcanvas");
-			console.log("Renderizando " + id + ": " + data.s.length);	
 			for(i=0;  i<data.s.length; i++) {
-				console.log("s: ", data.s[i]);
 				this.particleSystem[id].addNode(i+1, {s: data.s[i]});
+				$(el).append("<div id='" + id + "-node-" + (i+1) + "'><b>Node " + (i+1) + ": </b><br>"+
+										      "Lambda: " + data.lambda[i] + "<br>" +
+											  "Mu: " + data.mu[i] + "<br>" +
+											  "S: " + data.s[i] + "<br>" +
+											  "L: " + data.l[i] + "<br>" +
+											  "Lq: " + data.lq[i] + "<br>" +
+											  "W: " + data.w[i] + "<br>" +
+											  "Wq: " + data.wq[i] + "<br></div>");
+				$("#" + id + "-node-" + (i+1)).hide().css("position", "absolute").css("background-color", "white").css("border-style", "solid").css("border-width", "2px").css("border-color", "black").css("padding", "2px 2px 2px 2px");
 			}
 			for(i=0; i<data.s.length; i++) {
 				for(j=0; j<data.s.length; j++) {
@@ -461,9 +543,14 @@ $.extend(networkOutputBinding, {
 					_mouseP = arbor.Point(e.pageX-pos.left, e.pageY-pos.top);
 					nearest = particleSystem.nearest(_mouseP);
 					
+					var id = $(canvas).attr("id").split("-graphcanvas")[0];
 					if (!nearest.node) return false;
-					if (nearest.distance < 50) 
-						console.log("Name: " + nearest.node.name);
+					if (nearest.distance < 50) {
+						$("#" + id + "-node-" + nearest.node.name).css("left", _mouseP.x+50).css("top", _mouseP.y+70).show();
+					}
+					else{
+						$("#" + id + "-node-" + nearest.node.name).hide();
+					}
 				},
 			  clicked:function(e){
 				var pos = $(canvas).offset();
@@ -909,6 +996,12 @@ Shiny.inputBindings.register(graphInputBinding, 'shiny.graphInputBinding');*/
 						}
 							
 						//$ul.append("<li><a href='#"+ $el.attr("id") +"-tag-"+ tabObject.total + "'>" + data.value[i].title + "</a><span class='ui-icon ui-icon-close' role='presentation'>Remove Tab</span></li>\n");
+						$ul.find("li:last").each(function() {
+							$(this).on("click", function() {
+								$el.trigger("shown");
+							});
+						});
+						
 						$ul.find("a:last").each(function() {
 							$(this).on("click", function(event) {
 								$el.trigger("clicktab");
@@ -1083,3 +1176,6 @@ Shiny.inputBindings.register(graphInputBinding, 'shiny.graphInputBinding');*/
 	}
   });
   Shiny.inputBindings.register(JqueryUIsliderInputBinding, 'shiny.JqueryUIsliderInput');
+  
+ var JqueryUIUploadButtonInputBinding = {};
+ $

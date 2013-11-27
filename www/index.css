@@ -15,17 +15,29 @@ body {
 	min-height: 768px;
 	overflow: scroll;
 }
+
 #menu {
-	float:left;
+	position: absolute;
+	top: 0px;
+	left: 0px;
 	font-size: 15px;
+	min-height: 100%;
 	z-index: 10;
 }
 
+#menu ul {
+	width: 270px;
+}
+
 #results {
-	float: right;
+	position: absolute;
+	top: 0px;
+	left: 180px;
 	width: calc(100% - 185px);
-	font-size: 95%;
-	height: 760px;
+	display:block;
+	overflow: auto;
+	font-size: 85%;
+	min-height: 100%;
 }
 
 #numberoftabs {
@@ -34,15 +46,22 @@ body {
 
 .InputToolsBox {
 	float:left;
-	width: 390px;
-	height: auto;
+	position: relative;
+	left: 0px;
+	width: 31%;
+	/*height: auto;*/
 	/*height: 92%; 
 	width:29%;*/
 }
 .InputDataBox {
 	float:left;
-	width: 365px;
-	height: 350px;
+	position: relative;
+	top:0px;
+	left:0px;
+	width: 100%;
+	display: block;
+	height: auto;
+	/*height: 460px;*/
 	padding-left: 20px;
 	padding-bottom: 20px;
 	/*height: 49%;
@@ -51,19 +70,23 @@ body {
 }
 .ToolsBox {
 	float:left;
+	position: relative;
+	top: 0px;
+	left: 0px;
 	margin-top: 10px;
-	width: 365px;
-	height: 315px;
+	width: 100%;
+	height: 335px;
 	padding-left: 20px;
-	font-size: 12px;
-	/*height: 49%;
-	width: calc(100% - 20px);
-	padding-left: 20px;*/
 }
 .ModelOutputBox {
 	float:right;
-	height: 695px;
-	width: 920px;
+	position: relative;
+	top: 0px;
+	left: 10px;
+	/*min-height: 695px;*/
+	min-height: 715px;
+	width: 66%;
+	height:auto;
 	padding-left: 10px;
 	/*height: calc(100% - 65px);
 	width: calc(69% - 20px);
