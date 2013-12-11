@@ -1,7 +1,7 @@
 arqasgui
 ========
 
-Web Interface in Shiny for the R package "arqas"
+Web Interface in Shiny for the R package https://github.com/vishkey/arqas
 
 
 # Installation #
