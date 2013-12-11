@@ -15,6 +15,7 @@ Then move the file into your working directory in R and type:
 
 > install.packages("arqasgui_VERSION.tar.gz",repos=NULL,type="source")
 > library(arqasgui)
+
 A simpler solution is to use the 'devtools' package.
 
 > install.packages("devtools")
