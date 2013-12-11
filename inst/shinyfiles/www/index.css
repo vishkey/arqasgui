@@ -18,13 +18,24 @@ body {
 
 #menu {
 	position: absolute;
+	display: inline-block;
 	top: 0px;
 	left: 0px;
 	font-size: 15px;
+	height: auto;
 	min-height: 100%;
 	z-index: 10;
 }
 
+#logo {
+	position:absolute;
+	z-index: 11;
+	margin-top: 44%;
+	margin-left: 10px;
+}
+#logo img{
+	width: 150px;
+}
 #menu ul {
 	width: 270px;
 }

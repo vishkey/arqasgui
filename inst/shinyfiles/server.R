@@ -1,9 +1,11 @@
-library(shiny)
-library(arqas)
-library(ggplot2)
-
+#' Returns a HTML visualization of the data for a queue model
+#' @param qm Queue model
 toHTML <- function(qm) {UseMethod("toHTML", qm)}
 
+#' @rdname toHTML
+#' @method toHTML SimulatedModel
+#' @details
+#' \code{toHTML.SimulatedModel} implements the method for a Simulated model
 toHTML.SimulatedModel <- function(qm) {
   tag("center",
       tagList(
@@ -20,6 +22,11 @@ toHTML.SimulatedModel <- function(qm) {
       )
   )
 }
+
+#' @rdname toHTML
+#' @method toHTML OpenJackson
+#' @details
+#' \code{toHTML.OpenJackson} implements the method for a OpenJackson model
 toHTML.OpenJackson <- function(qm) {
   table <- paste("tag('center', tagList(
       tags$table(border=2, class='pure-table',
@@ -36,8 +43,16 @@ toHTML.OpenJackson <- function(qm) {
   return(eval(parse(text=table)))
 } 
 
+#' @rdname toHTML
+#' @method toHTML ClosedJackson
+#' @details
+#' \code{toHTML.ClosedJackson} implements the method for a ClosedJackson model
 toHTML.ClosedJackson <- function(qm) {toHTML.OpenJackson(qm)}
 
+#' @rdname toHTML
+#' @method toHTML MarkovianModel
+#' @details
+#' \code{toHTML.MarkovianModel} implements the method for a Markovian model
 toHTML.MarkovianModel <- function(qm) {
   tag("center",
       tagList(
@@ -55,6 +70,9 @@ toHTML.MarkovianModel <- function(qm) {
   )
 }
 
+#' Transforms two list of names and values into a unique array
+#' @param l1 List of names
+#' @param l2 List of values
 getOptions <- function (l1, l2) {
   res <- c()
   for(i in 1:length(l1)) {
@@ -63,12 +81,16 @@ getOptions <- function (l1, l2) {
   return(res)
 }
 
+#' Capitalize the fist character of a string
+#' @param x String
 simpleCap <- function(x) {
   s <- strsplit(x, " ")[[1]]
   paste(toupper(substring(s, 1,1)), substring(s, 2),
         sep="", collapse=" ")
 }
 
+#' Transforms a matrix into a string
+#' @param m Matrix
 matrixtostring <- function(m) {
   if (is.null(m)) return("")
   rows <- nrow(m)
@@ -82,6 +104,8 @@ matrixtostring <- function(m) {
   return(res)
 }
 
+#' Transforms a vector into a string
+#' @param v Vector
 vectortostring <- function(v) {
   res <- "";
   for(i in 1:(length(v)-1)) {
@@ -91,6 +115,7 @@ vectortostring <- function(v) {
   return(res)
 }
 
+#' Obtains the avaiable distributions and return a list of choices
 selectDistr <- function() {
   aux  <- function(n, v) {list(name=n, value=v)}
   choicelist <- list()
@@ -99,6 +124,11 @@ selectDistr <- function() {
   }
   return(choicelist)
 }
+
+#' Generate the necesary HTML for each type of argument into a model
+#' @param input The list of shiny inputs avaiable in the HTML
+#' @param model The queue model to generate the inputs
+#' @param parameters Optional inital values for the inputs.
 generateInputs <- function(input, model, parameters) {
   if (!is.null(parameters))
     args <- parameters
@@ -125,6 +155,8 @@ generateInputs <- function(input, model, parameters) {
   return(inputs)
 }
 
+#' Generate a menu, from a list.
+#' @param l List
 generateMenu <- function(l) {
   res <- vector("list", length(l))
   for(i in 1:length(l)) {
@@ -133,41 +165,83 @@ generateMenu <- function(l) {
   return(res)
 }
 
+#' Creates a new Tab for a Tab Panel
+#' @param title Title of the tab
+#' @param content Content of the tab
 newTab <- function(title, content) {
   list(title=title, content=content)
 }
 
+#' Sends a message to the HTML Shiny Tab Input to update its fields
+#' @param session Session in the server
+#' @param inputId Id of the input to update
+#' @param action The action to execute. Add/Remove/Update
+#' @param value The value to send. Depends of the action.
+#' @param removeButton Logical to indicate if its necesary to show the "close" icon in the tab.
 updateTabInput <- function(session, inputId, action=NULL, value=NULL, removeButton=FALSE) {
   message <- list(action=action, value=value, removeButton=removeButton)
   session$sendInputMessage(inputId, message)
 }
 
+#' Sends a message to the HTML Shiny Menu Input to update its fields
+#' @param session Session in the server
+#' @param inputId Id of the input to update
+#' @param action The action to execute. Add/Remove/Update
+#' @param menu The new value of the menu
 updateMenuInput <- function(session, inputId, action=NULL, menu=NULL) {
   message <- list(action=action, menu=menu)
   session$sendInputMessage(inputId, message)
 }
 
+#' Sends a message to the HTML Shiny Vector Input to update its fields
+#' @param session Session in the server
+#' @param inputId Id of the input to update
+#' @param value Value of the vector
 updateVectorInput <- function(session, inputId, value=NULL) {
   message <- list(value=value)
   session$sendInputMessage(inputId, message)
 }
 
+#' Sends a message to the HTML Shiny Matrix Input to update its fields
+#' @param session Session in the server
+#' @param inputId Id of the input to update
+#' @param value Value of the matrix
+#' @param size Number of colums or rows. Expect square matrix.
 updateMatrixInput <- function(session, inputId, value=NULL, size=NULL) {
   message <- list(value=value, size=size)
   session$sendInputMessage(inputId, message)
 }
+
+#' Sends a message to the HTML Shiny JQueryUISlider Input to update its fields
+#' @param session Session in the server
+#' @param inputId Id of the input to update
+#' @param values Values of the slider
+#' @param step Step of the slider
+#' @param min Minimun value of the slider
+#' @param max Maximun value of the slider
 updateJQueryUISliderInput <- function(session, inputId, values=NULL, step=NULL, min=NULL, max=NULL) {
   message <- list(values=values, step=step, min=min, max=max)
   session$sendInputMessage(inputId, message)
 }
 
+#' Sends a message to the HTML Shiny SelectDistr Input to update its fields
+#' @param session Session in the server
+#' @param inputId Id of the input to update
+#' @param distributions List of avaiable distributions
 updateSelectDistrInput <- function(session, inputId, distributions=NULL) {
   message <- list(distributions=distributions)
   session$sendInputMessage(inputId, message)
 }
 
+#' Returns a HTML string to build the tools to manipulate the model.
+#' @param input The list of shiny inputs avaiable in the HTML
+#' @param model The queue model to generete the tools
 generateToolbox <- function(input, model) {UseMethod("generateToolbox", model)}
 
+#' @rdname generateToolbox
+#' @method generateToolbox MarkovianModel
+#' @details
+#' \code{generateToolbox.MarkovianModel} implements the method for a Markovian model
 generateToolbox.MarkovianModel <- function(input, model) {
   res <- ""
   defaultModel <- model$fun()
@@ -184,18 +258,31 @@ generateToolbox.MarkovianModel <- function(input, model) {
                "<div id='PnQnSlider", input$results$total, "' class='shiny-slider-input' range='true' min=0 max=", maxSliderPn ," step=1 values='[0, ", maxSliderPn ,"]'></div><br>
                 <label for='WtWqtSlider", input$results$total, "'><b>W(t) and Wq(t)</b><br><br> (t from <input type='number' min='0' step='0.01' style='width:4em' id='WtWqtMin", input$results$total, "' value='0'/> to <input type='number' min='0' step='0.01' style='width:4em' id='WtWqtMax", input$results$total,"' value='0.5'/> with step <input type='number' min='0' step='0.01' style='width:4em' id='WtWqtStep", input$results$total,"' value='0.05'/>):</label><br>
                 <div id='WtWqtSlider", input$results$total, "' class='shiny-slider-input' range='true' min=0 max=2 step=0.05 values='[0, 0.5]'></div><br>
-                <button id='CalculateButton", input$results$total, "' type='button' class='btn action-button'>Compute</button><br>", sep=""))
+                <button id='CalculateButton", input$results$total, "' type='button' class='btn shiny-jqueybutton-input'>Compute</button><br>", sep=""))
 }
 
+#' @rdname generateToolbox
+#' @method generateToolbox Network
+#' @details
+#' \code{generateToolbox.Network} implements the method for Networks models
 generateToolbox.Network <- function(input, model) {
   defaultModel <- model$fun()
-  #if (class(defaultModel)[1] == "OpenJackson")
-     return(tagList(selectInput(inputId=paste("nodeSelector", input$results$total, sep=""), label="More info of node: ", choices=c("-----", as.character(1:length(defaultModel$servers))), multiple=FALSE), tags$br(), tags$label("for"=paste("pn1nk", input$results$total, sep=""), paste("Pn1..n", length(defaultModel$servers), sep="")), tags$input(id=paste("pn1nk", input$results$total, sep=""), value=vectortostring(1:length(defaultModel$servers)) ,class="shiny-vector-input")))
+  return(tagList(selectInput(inputId=paste("nodeSelector", input$results$total, sep=""), label="More info of node: ", choices=c("-----", as.character(1:length(defaultModel$servers))), multiple=FALSE), tags$br(), tags$label("for"=paste("pn1nk", input$results$total, sep=""), paste("Pn1..n", length(defaultModel$servers), sep="")), tags$input(id=paste("pn1nk", input$results$total, sep=""), value=vectortostring(1:length(defaultModel$servers)) ,class="shiny-vector-input")))
 }
 
+#' @rdname generateToolbox
+#' @method generateToolbox SimulatedModel
+#' @details
+#' \code{generateToolbox.SimulatedModel} implements the method for a Simulated model
 generateToolbox.SimulatedModel <- function(input, model) {
   
 }
+
+#' Generates the divs of the tree main panels. The inputs panel, the output panel and the tools panel.
+#' @param session Session in the server
+#' @param input The list of shiny inputs avaiable in the HTML
+#' @param model The model to generate the different panels.
+#' @param parameters Optional inital values for the inputs.
 generatePanel <- function(session, input, model, parameters) {
   list(
     paste("<div class='InputToolsBox'><div class='InputDataBox ui-widget-content ui-corner-all'><h4>Input data:</h4><hr><br>", generateInputs(input, model, parameters) ,"</div>",
@@ -205,6 +292,8 @@ generatePanel <- function(session, input, model, parameters) {
   )
 }
 
+#' Generates a Distr object from the distrList.
+#' @param distrInput The selected distribution
 generateDistr <- function(distrInput) {
   res <- "("
   for(i in 1:length(distrInput$params)) {
@@ -218,6 +307,9 @@ generateDistr <- function(distrInput) {
   return(eval(parse(text=paste("distrList[[", distrInput$distribution, "]]$fun", res, sep=""))))
 }
 
+#' Generates the diferent arugments for a model function
+#' @param fun The model function
+#' @param id The number of the tab where the model is executed
 generateArguments <- function(fun, id) {
   args <- names(formals(fun))
   res <- ""
@@ -236,58 +328,47 @@ generateArguments <- function(fun, id) {
   return(res)
 }
 
-tablePnQnVertical <- function(model, rangePnQn) {
+#' Generates a Datatable from the Pn and Qn values for the model
+#' @param model Queue model
+#' @param rangePnQn List of length 2 with the start value and the end value.
+datatablePnQn <- function(model , rangePnQn) {
   ranges <- seq(rangePnQn[[1]], rangePnQn[[2]], 1)
-  pns <- sprintf("%5.6g", Pn(model, ranges))
+  pns <- Pn(model, ranges)
   tryCatch ({
-    qns <- sprintf("%5.6g", Qn(model, ranges))
-    table <- paste("tags$table(border=2, style='display:inline-block;', class='pure-table', tags$thead(tags$tr(tags$th(width=80, 'n'), tags$th(width=150, 'P(n)'), tags$th(width=150, 'Q(n)'))), tags$tbody(", sep="")
-    if (length(ranges) > 1) {
-        for(i in 1:(length(ranges)-1)) {
-          table <- paste(table, "tags$tr(tags$td(", ranges[i], "), tags$td(", pns[i], "), tags$td(", qns[i] ,")), ", sep="")
-        }
-        table <- paste(table, "tags$tr(tags$td(", ranges[length(ranges)], "), tags$td(", pns[length(ranges)], "), tags$td(", qns[length(ranges)], "))))")
-    } else {
-        table <- paste(table, "tags$tr(tags$td(", rangePnQn[1], "), tags$td(", pns[1], "), tags$td(", qns[1],"))))", sep="")
-    }
-    return(eval(parse(text=table))) 
-  }, error= function(e) {
-    table <- paste("tags$table(border=2, style='display:inline-block', class='pure-table', tags$thead(tags$tr(tags$th(width=90, 'n'), tags$th(width=150, 'P(n)'))), tags$tbody(", sep="")
-    if (length(ranges) > 1) {
-      for(i in 1:(length(ranges)-1)) {
-        table <- paste(table, "tags$tr(tags$td(", ranges[i], "), tags$td(", pns[i], ")), ", sep="")
-      }
-      table <- paste(table, "tags$tr(tags$td(", ranges[length(ranges)], "), tags$td(", pns[length(ranges)], "))))")
-    } else {
-      table <- paste(table, "tags$tr(tags$td(", rangePnQn[1], "), tags$td(", pns[1], "))))", sep="")
-    }  
-    return(eval(parse(text=table))) 
+    qns <-Qn(model, ranges)
+    return(data.frame("n"= ranges, "P"=pns, "Q"=qns))
+  }, error = function(e) {
+    return(data.frame("n"= ranges, "P"=pns))
   })
 }
 
-tableWtWqtVertical <- function(model, rangeWtWqt, step) {
-    ranges <- seq(rangeWtWqt[[1]], rangeWtWqt[[2]], step)
-    wts <- sprintf("%5.6g", FW(model, ranges))
-    wqs <- sprintf("%5.6g", FWq(model, ranges))
-    
-    table <- paste("tags$table(border=2, style='display:inline-block', class='pure-table', tags$thead(tags$tr(tags$th(width=110, 't'), tags$th(width=150, 'W(t)'), tags$th(width=150, 'Wq(t)'))), tags$tbody(", sep="")
-    if (length(ranges) > 1) {
-      for(i in 1:(length(ranges)-1)) {
-        table <- paste(table, "tags$tr(tags$td(", ranges[i], "), tags$td(", wts[i], "), tags$td(", wqs[i] ,")), ", sep="")
-      }
-      table <- paste(table, "tags$tr(tags$td(", ranges[length(ranges)], "), tags$td(", wts[length(ranges)], "), tags$td(", wqs[length(ranges)], "))))")
-    } else {
-      table <- paste(table, "tags$tr(tags$td(", rangeWtWqt[1], "), tags$td(", wts[1], "), tags$td(", wqs[1],"))))", sep="")
-    }
-    return(eval(parse(text=table))) 
+#' Generates a Datatable from the Wt and Wqt values for the model
+#' @param model Queue model
+#' @param rangeWtWqt List of length 2 with the start value and the end value.
+#' @param step The desired step for the range.
+datatableWtWqt <- function(model, rangeWtWqt, step) {
+  ranges <- seq(rangeWtWqt[[1]], rangeWtWqt[[2]], step)
+  wts <-  FW(model, ranges)
+  wqs <- FWq(model, ranges)
+  return(data.frame("t"=ranges, "W"=wts, "Wq"= wqs))
 }
 
+#' Is the main function of the UI. Generate the panels and rules the behavior of the inputs and buttons.
+#' @param model Queue model
+#' @param session The session in the server
+#' @param input The list of shiny inputs avaiable in the HTML
+#' @param output The list of shiny outputs avaiable in the HTML
+#' @param parameters Optional initial values for the inputs
 loadUIModel <- function(model, session, input, output, parameters=NULL) {UseMethod("loadUIModel", model)}
 
+#' @rdname loadUIModel
+#' @method loadUIModel MarkovianModel
+#' @details
+#' \code{loadUIModel.MarkovianModel} implements the method for a Markovian model
 loadUIModel.MarkovianModel <- function(model, session, input, output, parameters=NULL) {
   numTab <- input$results$total
   updateTabInput(session, "results", list("add"),  list(newTab(model$name, generatePanel(session, input, model, parameters))), removeButton=TRUE)
-  eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Summary', '<div id=\"summarySpan", numTab, "\" class=\"shiny-html-output\"></div>')))\n", sep="")))
+  eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Summary', '<div id=\"summarySpan", numTab, "\" class=\"shiny-html-output\"></div><div id=\"pnDatatable", numTab, "\" class=\"shiny-datatable-output\"></div><br><div id=\"wtDatatable", numTab, "\" class=\"shiny-datatable-output\"></div>')))\n", sep="")))
   eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Waiting Plot', '<div id=\"waitplotDiv", numTab, "\" class=\"shiny-image-output\"></div>')))\n", sep=""))) 
   eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Probabilty Plot', '<div id=\"probplotDiv", numTab, "\" class=\"shiny-image-output\"></div>')))\n", sep=""))) 
   
@@ -337,17 +418,35 @@ loadUIModel.MarkovianModel <- function(model, session, input, output, parameters
       "output$summarySpan", numTab, "<- renderUI({input$CalculateButton", input$results$total, "\n",
                                                  "if (is.null(values$qm)) stop(values$error)\n",
                                                  "isolate({\n",
-                                                    "tagList(toHTML(values$qm), tags$br(), tags$br(), 
-                                                     tag('center', tagList(tags$div(style='overflow:hidden', tablePnQnVertical(values$qm, range(input$PnQnMin", numTab, ", input$PnQnMax", numTab, ")),
-                                                     tableWtWqtVertical(values$qm, range(input$WtWqtMin", numTab, ", input$WtWqtMax", numTab, "), input$WtWqtStep", numTab, ")))))\n", 
+                                                    "tagList(toHTML(values$qm), tags$br(), tags$br())", 
+                                                    #"tag('center', tagList(tags$div(style='overflow:hidden', tablePnQnVertical(values$qm, range(input$PnQnMin", numTab, ", input$PnQnMax", numTab, ")),",
+                                                    #"tableWtWqtVertical(values$qm, range(input$WtWqtMin", numTab, ", input$WtWqtMax", numTab, "), input$WtWqtStep", numTab, ")))))\n", 
                                                  "})\n", 
                                                  "})\n",
+      "output$pnDatatable", numTab, "<- renderDataTable({input$CalculateButton", input$results$total, "\n",
+                                                        "if (is.null(values$qm)) stop(values$error)\n",
+                                                        "isolate({\n",
+                                                            "datatablePnQn(values$qm, range(input$PnQnMin", numTab, ", input$PnQnMax", numTab, "))\n",
+                                                        "})\n",
+                                        "}, options = list(bJQueryUI=TRUE, sPaginationType='full_numbers', iDisplayLength=10, bSortClasses = TRUE))\n",
+      
+      "output$wtDatatable", numTab, "<- renderDataTable({input$CalculateButton", input$results$total, "\n",
+                                                        "if (is.null(values$qm)) stop(values$error)\n",
+                                                        "isolate({\n",
+                                                           "datatableWtWqt(values$qm, range(input$WtWqtMin", numTab, ", input$WtWqtMax", numTab, "), input$WtWqtStep", numTab, ")\n",
+                                                        "})\n",
+                                        "}, options = list(bJQueryUI=TRUE, sPaginationType='full_numbers', iDisplayLength=10, bSortClasses = TRUE))",
   #    "outputOptions(output, 'summarySpan", numTab, "', suspendWhenHidden = FALSE)\n",
    #   "outputOptions(output, 'waitplotDiv", numTab, "', suspendWhenHidden = FALSE)\n",
     #  "outputOptions(output, 'probplotDiv", numTab, "', suspendWhenHidden = FALSE)\n",
       sep="")))
 }
 
+#' Reactive function for the Network Output
+#' @param expr Expresion to execute
+#' @param env Enviroment
+#' @param quoted Logical to indicate if the expresion is quoted or not
+#' @param func Deprecated argument
 renderNetwork <- function(expr, env=parent.frame(), quoted=FALSE, func=NULL) {
   if (!is.null(func)) {
     shinyDeprecated(msg = "renderUI: argument 'func' is deprecated. Please use 'expr' instead.")
@@ -363,6 +462,10 @@ renderNetwork <- function(expr, env=parent.frame(), quoted=FALSE, func=NULL) {
   }
 }
 
+#' @rdname loadUIModel
+#' @method loadUIModel OpenJackson
+#' @details
+#' \code{loadUIModel.OpenJackson} implements the method for a OpenJackson model
 loadUIModel.OpenJackson <- function(model, session, input, output, parameters=NULL) {
   numTab <- input$results$total
   updateTabInput(session, "results", list("add"),  list(newTab(model$name, generatePanel(session, input, model, parameters))), removeButton=TRUE)
@@ -435,6 +538,10 @@ loadUIModel.OpenJackson <- function(model, session, input, output, parameters=NU
      sep="")))
 }
 
+#' @rdname loadUIModel
+#' @method loadUIModel ClosedJackson
+#' @details
+#' \code{loadUIModel.ClosedJackson} implements the method for a ClosedJackson model
 loadUIModel.ClosedJackson <- function(model, session, input, output, parameters=NULL) {
   numTab <- input$results$total
   updateTabInput(session, "results", list("add"),  list(newTab(model$name, generatePanel(session, input, model, parameters))), removeButton=TRUE)
@@ -505,6 +612,10 @@ loadUIModel.ClosedJackson <- function(model, session, input, output, parameters=
     sep="")))
 }
 
+#' @rdname loadUIModel
+#' @method loadUIModel SimulatedModel
+#' @details
+#' \code{loadUIModel.SimulatedModel} implements the method for a Simulated Model
 loadUIModel.SimulatedModel <- function(model, session, input, output, parameters=NULL) {
   numTab <- input$results$total
   updateTabInput(session, "results", list("add"),  list(newTab(model$name, generatePanel(session, input, model, parameters))), removeButton=TRUE)
@@ -555,6 +666,9 @@ loadUIModel.SimulatedModel <- function(model, session, input, output, parameters
                         }, deleteFile=TRUE)\n", sep="")))
 }
 
+#' Transforms a list into a numeric vector
+#' @param x A list
+#' @return A numeric vector
 tonumeric <- function(x) {
     a <- c()
     for(i in 1:ncol(x))
@@ -562,7 +676,6 @@ tonumeric <- function(x) {
     return(a)
 }
 
-# Define server logic required to generate and plot a random distribution
 shinyServer(function(input, output, session) {
   options(shiny.usecairo=FALSE)
   initMenu <- list(

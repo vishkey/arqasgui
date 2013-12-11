@@ -1,0 +1,17 @@
+\name{addFolder}
+\alias{addFolder}
+\title{Stores all the files in the folder route in a ini file, for loading when arqas starts.}
+\usage{
+  addFolder(folder)
+}
+\arguments{
+  \item{folder}{Route to the folder}
+}
+\value{
+  TRUE if everything goes well
+}
+\description{
+  Stores all the files in the folder route in a ini file,
+  for loading when arqas starts.
+}
+

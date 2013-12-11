@@ -1,3 +1,36 @@
+var JQueryActionButtonInputBinding = new Shiny.InputBinding();
+$.extend(JQueryActionButtonInputBinding, {
+	find: function(scope) {
+      return $(scope).find(".shiny-jqueybutton-input");
+    },
+    getValue: function(el) {
+      return $(el).data('val') || 0;
+    },
+    setValue: function(el, value) {
+    },
+    subscribe: function(el, callback) {
+      $(el).on("click.actionButtonInputBinding", function(e) {
+        var $el = $(this);
+        var val = $el.data('val') || 0;
+        $el.data('val', val + 1);
+
+        callback();
+      });
+    },
+    getState: function(el) {
+      return { value: this.getValue(el) };
+    },
+    receiveMessage: function(el, data) {
+    },
+    unsubscribe: function(el) {
+      $(el).off(".actionButtonInputBinding");
+    },
+	initialize: function(el) {
+			$(el).button();
+	}
+	});
+Shiny.inputBindings.register(JQueryActionButtonInputBinding, 'shiny.JQueryActionButtonInput');
+
 var selectDistrInputBinding = new Shiny.InputBinding();
 $.extend(selectDistrInputBinding, {
 	find: function(scope) {
@@ -1177,5 +1210,3 @@ Shiny.inputBindings.register(graphInputBinding, 'shiny.graphInputBinding');*/
   });
   Shiny.inputBindings.register(JqueryUIsliderInputBinding, 'shiny.JqueryUIsliderInput');
   
- var JqueryUIUploadButtonInputBinding = {};
- $

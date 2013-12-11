@@ -1,0 +1,14 @@
+\docType{data}
+\name{registeredDistributions}
+\alias{registeredDistributions}
+\title{Counter of registered distributions}
+\format{num 6}
+\usage{
+  registeredDistributions
+}
+\description{
+  Counter of registered distributions
+}
+\keyword{datasets}
+\keyword{internal}
+
