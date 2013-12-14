@@ -125,6 +125,10 @@ selectDistr <- function() {
   return(choicelist)
 }
 
+distrDefaultValues <- function(distrModel) {
+  return("")
+}
+
 #' Generate the necesary HTML for each type of argument into a model
 #' @param input The list of shiny inputs avaiable in the HTML
 #' @param model The queue model to generate the inputs
@@ -142,7 +146,7 @@ generateInputs <- function(input, model, parameters) {
         "matrix" = inputs <- paste(inputs, "<label for='", argsnames[i], input$results$total, "'>", simpleCap(argsnames[i]),":</label><span id='", argsnames[i], input$results$total, "' ini-value='", matrixtostring(eval(args[[i]])) ,"' class='shiny-matrix-input'/><br>", sep=""),
         "vector" = inputs <- paste(inputs, "<label for='", argsnames[i], input$results$total, "'>", simpleCap(argsnames[i]), ":</label><input id='", argsnames[i], input$results$total, "' value='", vectortostring(eval(args[[i]])),"' class='shiny-vector-input'  /><br>", sep=""),
         "boolean" = inputs <- paste(inputs, "<label for='", argsnames[i], input$results$total, "'>", simpleCap(argsnames[i]), ":</label><input id='", argsnames[i], input$results$total, "' type='checkbox' ", ifelse(eval(args[[i]]), "checked", ""), "/><br>", sep=""),
-        "distr" = inputs <- paste(inputs, "<label for='", argsnames[i], input$results$total, "'>", simpleCap(argsnames[i]), ":</label><div id='", argsnames[i], input$results$total, "' class='shiny-distr-input'></div><br>", sep="")
+        "distr" = inputs <- paste(inputs, "<label for='", argsnames[i], input$results$total, "'>", simpleCap(argsnames[i]), ":</label><div id='", argsnames[i], input$results$total, "' class='shiny-distr-input' ", distrdefaultValues(eval(args[[i]])), "></div><br>", sep="")
     )       
   }
   inputs <- paste(inputs, "<br></form>", sep="")
@@ -267,7 +271,22 @@ generateToolbox.MarkovianModel <- function(input, model) {
 #' \code{generateToolbox.Network} implements the method for Networks models
 generateToolbox.Network <- function(input, model) {
   defaultModel <- model$fun()
-  return(tagList(selectInput(inputId=paste("nodeSelector", input$results$total, sep=""), label="More info of node: ", choices=c("-----", as.character(1:length(defaultModel$servers))), multiple=FALSE), tags$br(), tags$label("for"=paste("pn1nk", input$results$total, sep=""), paste("Pn1..n", length(defaultModel$servers), sep="")), tags$input(id=paste("pn1nk", input$results$total, sep=""), value=vectortostring(1:length(defaultModel$servers)) ,class="shiny-vector-input")))
+  return(tagList(tags$label("for"=paste("pn1nk", input$results$total, sep=""), paste("Pn1..n", length(defaultModel$servers), sep="")), 
+                 tags$input(id=paste("pn1nk", input$results$total, sep=""), value=vectortostring(1:length(defaultModel$servers)) ,class="shiny-vector-input"))
+  )
+}
+
+#' @rdname generateToolbox
+#' @method generateToolbox OpenJackson
+#' @details
+#' \code{generateToolbox.OpenJackson} implements the method for OpenJackson model
+generateToolbox.OpenJackson <- function(input, model) {
+  defaultModel <- model$fun()
+  return(tagList(selectInput(inputId=paste("nodeSelector", input$results$total, sep=""), label="More info of node: ", choices=c("-----", as.character(1:length(defaultModel$servers))), multiple=FALSE), tags$br(), 
+                 tags$label("for"=paste("pn1nk", input$results$total, sep=""), paste("Pn1..n", length(defaultModel$servers), sep="")), 
+                 tags$input(id=paste("pn1nk", input$results$total, sep=""), value=vectortostring(1:length(defaultModel$servers)) ,class="shiny-vector-input"),
+                 numericInput(inputId=paste("p0i", input$results$total, sep=""), label="Probability for an arrival from the exterior to the node:", value=1, min=1, max=length(defaultModel$servers), step=1))
+  )
 }
 
 #' @rdname generateToolbox
@@ -405,7 +424,9 @@ loadUIModel.MarkovianModel <- function(model, session, input, output, parameters
                                                      "})\n", 
                                                      "summaryPnQn(values$qm, seq(pnqnrange[1], pnqnrange[2], 1))\n",
                                                      "ggsave(outfile, width=9, height=4.5, dpi=100)\n",
-                                                    "list(src=outfile, alt='Loading plot...', title='Pn: Steady-state probability of having n customers in the system.\nQn: Steady-state probability of finding n customers in the system when a new customer arrives.')}, deleteFile=TRUE)\n",
+                                                     "title <- 'Pn: Steady-state probability of having n customers in the system.\n'\n",
+                                                     "try({Qn(values$qm, 0); title <- paste(title, 'Qn: Steady-state probability of finding n customers in the system when a new customer arrives.', sep='')})\n",
+                                                     "list(src=outfile, alt='Loading plot...', title=title)}, deleteFile=TRUE)\n",
       "output$waitplotDiv", numTab, "<- renderImage({outfile <- tempfile(fileext='.svg')\n",
                                                     "input$CalculateButton", input$results$total, "\n",
                                                     "if(is.null(values$qm)) stop(values$error)\n",
@@ -469,7 +490,7 @@ renderNetwork <- function(expr, env=parent.frame(), quoted=FALSE, func=NULL) {
 loadUIModel.OpenJackson <- function(model, session, input, output, parameters=NULL) {
   numTab <- input$results$total
   updateTabInput(session, "results", list("add"),  list(newTab(model$name, generatePanel(session, input, model, parameters))), removeButton=TRUE)
-  eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Summary', '<div id=\"summarySpan", numTab, "\" class=\"shiny-html-output\"></div><div id=\"probDiv", numTab, "\" class=\"shiny-html-output\"></div>')))\n", sep="")))
+  eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Summary', '<div id=\"summarySpan", numTab, "\" class=\"shiny-html-output\"></div><div id=\"probDiv", numTab, "\" class=\"shiny-html-output\"></div><div id=\"p0iDiv", numTab, "\" class=\"shiny-html-output\"></div>')))\n", sep="")))
   eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Graph', '<div id=\"networkDiv", numTab, "\" class=\"shiny-network-output\"></div>')))\n", sep="")))
   values <- reactiveValues()
   espChar <- "[\\\\]"
@@ -491,6 +512,10 @@ loadUIModel.OpenJackson <- function(model, session, input, output, parameters=NU
                                       "if (is.null(values$qm)) return()\n",
                                       "tag('center', tagList(tags$table(border=2, width=400, class='pure-table', tags$tr(tags$td(tags$b('Pn1..nk:')), tags$td(sprintf('%5.9g', Pn(values$qm, input$pn1nk", numTab, ")))))))\n",
                                   "})\n",
+    "output$p0iDiv", numTab, "<- renderUI({\n",
+                                      "if (is.null(values$qm)) return()\n",
+                                       "tag('center', tagList(tags$table(border=2, width=400, class='pure-table', tags$tr(tags$td(tags$b('P0i:')), tags$td(sprintf('%5.9g', P0i(values$qm, input$p0i", numTab, ")))))))\n",
+                                    "})\n",
     "output$networkDiv", numTab, "<- renderNetwork({\n",
                                         "if (is.null(values$qm)) stop(values$error)\n",
                                         "isolate({\n",
