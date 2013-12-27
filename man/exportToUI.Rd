@@ -2,7 +2,7 @@
 \alias{exportToUI}
 \title{Exports a function to the UI}
 \usage{
-  exportToUI(fun, name, types, class)
+  exportToUI(fun, name, args, class)
 }
 \arguments{
   \item{fun}{Function of the model}

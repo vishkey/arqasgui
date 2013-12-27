@@ -2,7 +2,7 @@
 \name{registeredDistributions}
 \alias{registeredDistributions}
 \title{Counter of registered distributions}
-\format{num 6}
+\format{num 8}
 \usage{
   registeredDistributions
 }

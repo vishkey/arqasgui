@@ -1,0 +1,17 @@
+\name{modelarg}
+\alias{modelarg}
+\title{Create a list with the label and the type of the argument of the model}
+\usage{
+  modelarg(label, type)
+}
+\arguments{
+  \item{label}{Description of the argument}
+
+  \item{type}{Type of the argument (numeric, boolean,
+  vector, matrix, distr, Vdistr)}
+}
+\description{
+  Create a list with the label and the type of the argument
+  of the model
+}
+

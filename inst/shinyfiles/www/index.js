@@ -1,7 +1,7 @@
 var JQueryActionButtonInputBinding = new Shiny.InputBinding();
 $.extend(JQueryActionButtonInputBinding, {
 	find: function(scope) {
-      return $(scope).find(".shiny-jqueybutton-input");
+      return $(scope).find(".shiny-jquerybutton-input");
     },
     getValue: function(el) {
       return $(el).data('val') || 0;
@@ -9,11 +9,14 @@ $.extend(JQueryActionButtonInputBinding, {
     setValue: function(el, value) {
     },
     subscribe: function(el, callback) {
-      $(el).on("click.actionButtonInputBinding", function(e) {
+      $(el).on("click.JQueryActionButtonInputBinding", function(e) {
         var $el = $(this);
         var val = $el.data('val') || 0;
         $el.data('val', val + 1);
-
+        
+        if ($el.attr("once") != null)
+          $el.button("disable");
+          
         callback();
       });
     },
@@ -21,14 +24,23 @@ $.extend(JQueryActionButtonInputBinding, {
       return { value: this.getValue(el) };
     },
     receiveMessage: function(el, data) {
+        if (data.hasOwnProperty("disabled")) {
+          if (data.disabled == "disabled") {
+            $(el).button("disable");
+          }
+          if (data.disabled == "enabled") {
+            $(el).button("enable");
+          }
+        }
+        $(el).button("refresh");
     },
     unsubscribe: function(el) {
-      $(el).off(".actionButtonInputBinding");
+      $(el).off(".JQueryActionButtonInputBinding");
     },
 	initialize: function(el) {
 			$(el).button();
 	}
-	});
+});
 Shiny.inputBindings.register(JQueryActionButtonInputBinding, 'shiny.JQueryActionButtonInput');
 
 var selectDistrInputBinding = new Shiny.InputBinding();
@@ -57,11 +69,12 @@ $.extend(selectDistrInputBinding, {
 		event.stopImmediatePropagation();
 		$("#distrInputs"+id).empty();
 		var selected = $(this).val();
-		var parameters = self.distributions[selected].params;
+		var parameters = self.distributions[id][selected].params;
 		for(var i=0; i<parameters.length; i++) {
 			$("#distrInputs"+id).append("<label>"+parameters[i].name+ ": </label><input id='distrInput-"+parameters[i].name+ "-" + id + "' name='"+ parameters[i].name + "' value='"+ parameters[i].value +"' style='width:4.5em;' type='number'/>");
-			$("#distrInput-"+parameters[i].name + "-" + id).on("change", function(event) {
-				callback(false);
+			$("#distrInput-"+parameters[i].name + "-" + id).on("change", {posparam:i}, function(event) {
+        self.distributions[id][selected].params[event.data.posparam].value = $(this).val();
+        callback(false);
 			});
 		}
 		callback(false);
@@ -73,11 +86,17 @@ $.extend(selectDistrInputBinding, {
 	receiveMessage: function(el, data) {
 		var id = $(el).attr("id");
 		if (data.hasOwnProperty('distributions')) {
-			this.distributions = data.distributions;
+      this.distributions[id] = data.distributions;
 			for (var i=0; i<data.distributions.length; i++) {
 				$("#select"+id).append("<option value=" + i + ">" + data.distributions[i].name + "</option>");
 			}
 		}
+    var defval = $(el).attr("defaultvalue");
+    if (defval != null) {
+      defval = eval("(" + defval + ")");
+      this.distributions[id][defval.id-1].params = defval.params;
+      $("#select"+id).val(defval.id-1);
+    }
 		$("#select"+id).trigger('change');
 	},
 	getState: function(el) {
@@ -86,12 +105,14 @@ $.extend(selectDistrInputBinding, {
 	initialize: function(el) {
 		this.distributions = new Array();
 		var id = $(el).attr("id");
-		$(el).append("<select id='select" + id + "' style='display:inline'></select>").append("<div id='distrInputs" + id + "' style='display:inline; height:20px; width:auto;'></div>");
+    if (!this.distributions.hasOwnProperty(id)) {
+  		$(el).append("<select id='select" + id + "' style='display:inline'></select>").append("<div id='distrInputs" + id + "' style='display:inline; height:20px; width:auto;'></div>");
+    }
 	}
 });
 Shiny.inputBindings.register(selectDistrInputBinding, 'shiny.selectDistrInputBinding');
 
-//Creamos una especializacion de TextInput para introducir vectores numéricos
+//Creamos una especializacion de TextInput para introducir vectores num?ricos
 var vectorInputBinding = new Shiny.InputBinding();
 $.extend(vectorInputBinding, {
     find: function(scope) {
@@ -120,17 +141,18 @@ $.extend(vectorInputBinding, {
     },
 	receiveMessage: function(el, data) {
 		console.log("Recivido vector: " + data);
-		  if (data.hasOwnProperty('value')) {
-			res = "";
-			for(var i=0; i<data.value.length; i++) {
-				res += data.value[i] + "; ";
-			}
-			this.setValue(el, res.substr(0, res.length-2));
-		 }
-		 
-		  if (data.hasOwnProperty('label'))
-			$(el).parent().find('label[for=' + el.id + ']').text(data.label);
-
+		  if (data.hasOwnProperty('value') && data.value != null) {
+  			res = "";
+  			for(var i=0; i<data.value.length; i++) {
+  				res += data.value[i] + "; ";
+  			}
+			  this.setValue(el, res.substr(0, res.length-2));
+		  }
+     
+		  if (data.hasOwnProperty('label') && data.label != null) {
+        console.log("Label: " + data.label);
+			  $(el).parent().find('label[for=' + el.id + ']').html("<b>" + data.label + "</b>");
+		  }
 		  $(el).trigger('change');
 		},
 	getState: function(el) {
@@ -339,13 +361,13 @@ $.extend(matrixInputBinding, {
 		});
 	},
 	_reduceTable: function(id, prevn, n) {
-		//Eliminamos las últimas filas
+		//Eliminamos las ?ltimas filas
 		for(var i=prevn-n+1; i<=prevn; i++) {
 		-	$("#" + id + "-table-" + i).remove();
 		}
 		this.matrix[id].length -= n;
 		
-		//Eliminamos las celdas de las n penúltimas columnas en todas las filas restantes
+		//Eliminamos las celdas de las n pen?ltimas columnas en todas las filas restantes
 		for(var i=1; i<=prevn-n; i++) {
 			var probLost = 0;
 			for (var j=(prevn-n); j<prevn; j++) {
@@ -369,8 +391,8 @@ var networkOutputBinding = new Shiny.OutputBinding();
 $.extend(networkOutputBinding, {
 	find: function(scope) {
 	  return $(scope).find('.shiny-network-output');
-    },
-    renderValue: function(el, data) {
+  },
+  renderValue: function(el, data) {
 		var id = $(el).attr("id");
 		if(!this.hasOwnProperty("particleSystem")) {
 			this.particleSystem = new Array();
@@ -393,11 +415,17 @@ $.extend(networkOutputBinding, {
 				$("#" + id + "-node-" + (i+1)).hide().css("position", "absolute").css("background-color", "white").css("border-style", "solid").css("border-width", "2px").css("border-color", "black").css("padding", "2px 2px 2px 2px");
 			}
 			for(i=0; i<data.s.length; i++) {
+        var divProb = "<div id='" + id + "-node-" + (i+1) + "-probs'><b>Probs from Node " + (i+1) + " to: </b><br>";
 				for(j=0; j<data.s.length; j++) {
 					if(data.p[i][j] != 0) {
-						this.particleSystem[id].addEdge((i+1), (j+1), {p: parseFloat(data.p[i][j])});
-					}
+              this.particleSystem[id].addEdge((i+1), (j+1), {p: parseFloat(data.p[i][j])});
+              divProb += "Node " + (j+1) + ": " + data.p[i][j] + "<br>";
+				   }
 				}
+        divProb += "</div>";
+        console.log(divProb);
+        $(el).append(divProb)
+        $("#" + id + "-node-" + (i+1) + "-probs").hide().css("position", "absolute").css("background-color", "white").css("border-style", "solid").css("border-width", "2px").css("border-color", "black").css("padding", "2px 2px 2px 2px");
 			}
 		  /*	for(i=0; data.l.length; i++) {
 				this.particleSystem[id].addNode(i+1, {lambda:data.lambda[i], mu:data.mu[i], s:data.s[i], l: data.l[i], lq:data.lq[i], w:data.w[i], wq: data.wq[i]});
@@ -480,12 +508,45 @@ $.extend(networkOutputBinding, {
 					ctx.arc(pt1.x, pt1.y-1.25*radius, radius, 0.75*Math.PI, 0.25*Math.PI);	
 					ctx.stroke();
 					ctx.fillStyle = "black";
-					var sizeText = ctx.measureText(edge.data.p);
-					ctx.fillText(edge.data.p, pt1.x-sizeText.width/2, pt1.y-2.4*radius);
+          
+          var perp = perpendicularVector(radius, radius+5, 5);
+          var endArrow = pointinline({x:pt1.x-2, y:pt1.y+2}, 1, radius, -1);
+					var startArrow = pointinline({x:pt1.x-2, y:pt1.y+2}, 1, radius+10, -1);
+          ctx.beginPath();
+    			ctx.moveTo(-perp.x+startArrow.x, -perp.y+startArrow.y);
+					ctx.lineTo(endArrow.x, endArrow.y);
+					ctx.lineTo(perp.x+startArrow.x, perp.y+startArrow.y);
+          ctx.lineTo(-perp.x+startArrow.x, -perp.y+startArrow.y);
+          ctx.fillStyle = "black";
+          ctx.fill();
+					//var sizeText = ctx.measureText(edge.data.p);
+					//ctx.fillText(edge.data.p, pt1.x-sizeText.width/2, pt1.y-2.4*radius);
 					
 				} else {
 					if (parseInt(edge.source.name) > parseInt(edge.target.name)) {
-						var perp = perpendicularVector((pt2.x-pt1.x), (pt2.y-pt1.y), 20);
+            //Dibujamos la linea
+            ctx.beginPath();
+            ctx.moveTo(pt1.x, pt1.y);
+            ctx.lineTo(pt2.x, pt2.y);
+            ctx.stroke();
+            var pMedio = {x: ((pt2.x+pt1.x)/2), y: ((pt2.y+pt1.y)/2)};
+            //Dibujamos la flecha
+            var perp = perpendicularVector((pt2.x-pt1.x), (pt2.y-pt1.y), 5);
+            if (pt2.x > pt1.x) {
+  						var endArrow = pointinline(pMedio, (pt2.y-pt1.y)/(pt2.x-pt1.x), 15, 1);
+							var startArrow = pointinline(pMedio, (pt2.y-pt1.y)/(pt2.x-pt1.x), 5, 1);
+						} else { 
+							var endArrow = pointinline(pMedio, (pt1.y-pt2.y)/(pt1.x-pt2.x), 15, -1);
+							var startArrow = pointinline(pMedio, (pt1.y-pt2.y)/(pt1.x-pt2.x), 5, -1);
+						}
+            ctx.beginPath();
+  					ctx.moveTo(-perp.x+startArrow.x, -perp.y+startArrow.y);
+						ctx.lineTo(endArrow.x, endArrow.y);
+						ctx.lineTo(perp.x+startArrow.x, perp.y+startArrow.y);
+            ctx.lineTo(-perp.x+startArrow.x, -perp.y+startArrow.y);
+            ctx.fillStyle = "black";
+            ctx.fill();
+						/*var perp = perpendicularVector((pt2.x-pt1.x), (pt2.y-pt1.y), 20);
 						ctx.beginPath();
 						ctx.moveTo(perp.x+pt1.x, perp.y+pt1.y);
 						ctx.lineTo(perp.x+pt2.x, perp.y+pt2.y);
@@ -510,10 +571,30 @@ $.extend(networkOutputBinding, {
 						ctx.fill();
 						ctx.stroke();
 						ctx.fillStyle = "black";
-						ctx.fillText(edge.data.p, pMedio.x-sizeText.width/2, pMedio.y);
+						ctx.fillText(edge.data.p, pMedio.x-sizeText.width/2, pMedio.y);*/
 						
 					} else {
-					    var perp = perpendicularVector((pt2.x-pt1.x), (pt2.y-pt1.y), 20);
+            ctx.beginPath();
+  					ctx.moveTo(pt1.x, pt1.y);
+						ctx.lineTo(pt2.x, pt2.y);
+						ctx.stroke();
+            var pMedio = {x: ((pt2.x+pt1.x)/2), y: ((pt2.y+pt1.y)/2)};
+            if (pt2.x > pt1.x) {
+  						var endArrow = pointinline(pMedio, (pt2.y-pt1.y)/(pt2.x-pt1.x), 15, 1);
+							var startArrow = pointinline(pMedio, (pt2.y-pt1.y)/(pt2.x-pt1.x), 5, 1);
+						} else { 
+							var endArrow = pointinline(pMedio, (pt1.y-pt2.y)/(pt1.x-pt2.x), 15, -1);
+							var startArrow = pointinline(pMedio, (pt1.y-pt2.y)/(pt1.x-pt2.x), 5, -1);
+						}
+            var perp = perpendicularVector((pt2.x-pt1.x), (pt2.y-pt1.y), 5);
+            ctx.beginPath();
+  					ctx.moveTo(-perp.x+startArrow.x, -perp.y+startArrow.y);
+						ctx.lineTo(endArrow.x, endArrow.y);
+						ctx.lineTo(perp.x+startArrow.x, perp.y+startArrow.y);
+            ctx.lineTo(-perp.x+startArrow.x, -perp.y+startArrow.y);
+            ctx.fillStyle = "black";
+            ctx.fill();
+					  /*  var perp = perpendicularVector((pt2.x-pt1.x), (pt2.y-pt1.y), 20);
 						ctx.beginPath();
 						ctx.moveTo((-perp.x)+pt1.x, (-perp.y)+pt1.y);
 						ctx.lineTo((-perp.x)+pt2.x, (-perp.y)+pt2.y);
@@ -538,7 +619,7 @@ $.extend(networkOutputBinding, {
 						ctx.fill();
 						ctx.stroke();
 						ctx.fillStyle = "black";
-						ctx.fillText(edge.data.p, pMedio.x-sizeText.width/2, pMedio.y);
+						ctx.fillText(edge.data.p, pMedio.x-sizeText.width/2, pMedio.y);*/
 					}
 				}
 				
@@ -551,7 +632,7 @@ $.extend(networkOutputBinding, {
 			  // draw a circle centered at pt
 				ctx.beginPath();
 				ctx.arc(pt.x, pt.y, radius, 0, 2 * Math.PI, false);
-				ctx.fillStyle = (node.data.alone) ? "orange" : "white"
+				ctx.fillStyle = (node.data.p) ? "orange" : "white"
 				ctx.fill();
 				ctx.fillStyle = "black";
 				var sizeText = ctx.measureText("M/M/"+node.data.s);
@@ -580,16 +661,49 @@ $.extend(networkOutputBinding, {
 					if (!nearest.node) return false;
 					if (nearest.distance < 50) {
 						$("#" + id + "-node-" + nearest.node.name).css("left", _mouseP.x+50).css("top", _mouseP.y+70).show();
+            $("#" + id + "-node-" + dragged.node.name + "-probs").css("left", _mouseP.x+50).css("top", _mouseP.y+70);
 					}
 					else{
 						$("#" + id + "-node-" + nearest.node.name).hide();
+            $("#" + id + "-node-" + nearest.node.name + "-probs").hide();
 					}
 				},
+        mouseDown: function(e) {
+          var pos = $(canvas).offset();
+				  _mouseP = arbor.Point(e.pageX-pos.left, e.pageY-pos.top)
+				  var nearest = particleSystem.nearest(_mouseP);
+        
+          var id = $(canvas).attr("id").split("-graphcanvas")[0];
+        
+				  if (nearest && nearest.node !== null){
+            if ($("#" + id + "-node-" + nearest.node.name + "-probs").is(":hidden")) {
+              $("#" + id + "-node-" + nearest.node.name + "-probs").css("left", _mouseP.x+50).css("top", _mouseP.y+70).show();
+				    }
+            
+          }
+          $(canvas).mouseup(handler.mouseUp);
+        },
+        mouseUp: function(e) {
+          var pos = $(canvas).offset();
+  			  _mouseP = arbor.Point(e.pageX-pos.left, e.pageY-pos.top)
+				  var nearest = particleSystem.nearest(_mouseP);
+        
+          var id = $(canvas).attr("id").split("-graphcanvas")[0];
+        
+				  if (nearest && nearest.node !== null){
+            if ($("#" + id + "-node-" + nearest.node.name + "-probs").is(":visible")) {
+              $("#" + id + "-node-" + nearest.node.name + "-probs").hide();
+				    }  
+          }
+          $(canvas).unbind('mouseup', handler.mouseUp);
+        },
 			  clicked:function(e){
 				var pos = $(canvas).offset();
 				_mouseP = arbor.Point(e.pageX-pos.left, e.pageY-pos.top)
 				dragged = particleSystem.nearest(_mouseP);
-
+        
+        var id = $(canvas).attr("id").split("-graphcanvas")[0];
+        
 				if (dragged && dragged.node !== null){
 				  // while we're dragging, don't let physics move the node
 				  //dragged.node.fixed = true
@@ -628,6 +742,7 @@ $.extend(networkOutputBinding, {
 			
 			// start listening
 			$(canvas).mousedown(handler.clicked);
+      $(canvas).mousedown(handler.mouseDown);
 			$(canvas).mousemove(handler.moved);
 		  },
 		  
@@ -941,7 +1056,7 @@ Shiny.inputBindings.register(graphInputBinding, 'shiny.graphInputBinding');*/
   });
   Shiny.inputBindings.register(menuInputBinding, 'shiny.menuInputBinding');
   
-   //Creamos un objeto que guarde los valores más importantes de un Tab de Jquery UI
+   //Creamos un objeto que guarde los valores m?s importantes de un Tab de Jquery UI
  var JqueryUITab = function () {
 	this.total = 0;
 	this.size = 0;
@@ -1064,7 +1179,7 @@ Shiny.inputBindings.register(graphInputBinding, 'shiny.graphInputBinding');*/
 		if(!this.hasOwnProperty("infoTabs"))
 			this.infoTabs = new Array();
 			
-	    //Si no está inicializado el elemento lo hacemos
+	    //Si no est? inicializado el elemento lo hacemos
 		if (!this.infoTabs.hasOwnProperty($(el).attr("id"))) {
 			this.infoTabs[$(el).attr("id")] = new JqueryUITab();
 			
