@@ -1,5 +1,3 @@
-source("../../R/arqasgui.R")
-
 toDatatable <- function(qm, ...) {UseMethod("toDatatable", qm)}
 
 toDatatable.MarkovianModel <- function(qm) {
