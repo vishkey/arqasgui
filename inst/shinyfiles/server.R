@@ -1,6 +1,6 @@
 devtools::install_github("arqas", "vishkey")
 devtools::install_github("arqasgui", "vishkey")
-library¨(arqas)
+library(arqas)
 library(arqasgui)
 
 toDatatable <- function(qm, ...) {UseMethod("toDatatable", qm)}
