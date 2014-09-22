@@ -1,47 +1,314 @@
+String.prototype.capitalize = function() {
+    return this.charAt(0).toUpperCase() + this.slice(1);
+}
+
 var JQueryActionButtonInputBinding = new Shiny.InputBinding();
 $.extend(JQueryActionButtonInputBinding, {
 	find: function(scope) {
       return $(scope).find(".shiny-jquerybutton-input");
     },
     getValue: function(el) {
-      return $(el).data('val') || 0;
+      if ($(el).is("[dialog-input]")) {
+        var res = new Object();
+        res.value = $(el).data('val');
+        res.name  = $(el).data('name');
+        res.distr = $(el).data('distribution');
+        return(res);
+      }
+      return $(el).data('val');
     },
     setValue: function(el, value) {
     },
     subscribe: function(el, callback) {
-      $(el).on("click.JQueryActionButtonInputBinding", function(e) {
-        var $el = $(this);
-        var val = $el.data('val') || 0;
-        $el.data('val', val + 1);
-        
-        if ($el.attr("once") != null)
-          $el.button("disable");
-          
+      if ($(el).is("[dialog-input]")) {
+        $(el).parent().append("<div id='"+ $(el).attr("id") + "_dialog' title='Insert a name for the distribution'><center><label>Name: </label><input type='text' id='"+ $(el).attr("id") + "_input'/></center></div>");
+        $("#" + $(el).attr("id") + "_dialog").dialog({
+            autoOpen: false,
+        		resizable: false,
+      			modal: true,
+            width: 330,
+      			buttons: {
+      				Ok: function() {
+      					$(el).trigger("send.JQueryActionButtonInputBinding");
+      					$(this).dialog("close");
+      				},
+      				Cancel: function() {
+                $(el).trigger("cancel.JQueryActionButtonInputBinding")
+      					$(this).dialog("close");
+      				}
+		    	  }
+	      	});
+          if ($(el).data("val") == null)
+            $(el).data("val", 0);
+      }
+      
+      $(el).on("send.JQueryActionButtonInputBinding", function(e) {
+        e.stopImmediatePropagation();
+        $(el).data('name', $("#"+ $(el).attr("id") + "_input").val());
         callback();
+      })
+      
+      $(el).on("cancel.JQueryActionButtonInputBinding", function(e) {
+        e.stopImmediatePropagation();
+        $("#" + $(el).attr("id") + "_input").val("");
+        $(el).removeAttr("disabled");
+      })
+      
+      $(el).on("click.JQueryActionButtonInputBinding", function(e) {
+        e.stopImmediatePropagation();
+        if (!$(el).is("[disabled]")) {
+          var $el = $(this);
+          var val = $el.data('val') ;
+          $el.data('val', val + 1);
+          if ($el.attr("once") != null) {
+            $(el).attr("disabled", "");
+          }
+          
+          if ($el.is("[dialog-input]")) {
+            $("#"+ $el.attr("id") + "_dialog").dialog("open");
+            return;
+          }else {  
+            callback();
+          }
+        }
       });
     },
     getState: function(el) {
-      return { value: this.getValue(el) };
+       if ($(el).is("[dialog-input]")) {
+        var res = new Object();
+        res.value = $(el).data('val');
+        res.name  = $(el).data('name');
+        res.distr = $(el).data('distribution');
+        return(res);
+      }
+      return $(el).data('val');
     },
     receiveMessage: function(el, data) {
         if (data.hasOwnProperty("disabled")) {
-          if (data.disabled == "disabled") {
-            $(el).button("disable");
-          }
-          if (data.disabled == "enabled") {
-            $(el).button("enable");
+          if (data.disabled) {
+            $(el).attr("disabled", "");
+          }else{
+            $(el).removeAttr("disabled");
           }
         }
-        $(el).button("refresh");
     },
     unsubscribe: function(el) {
       $(el).off(".JQueryActionButtonInputBinding");
     },
 	initialize: function(el) {
-			$(el).button();
-	}
+      $(el).button();
+      $(el).data("val", 0);
+   }
 });
 Shiny.inputBindings.register(JQueryActionButtonInputBinding, 'shiny.JQueryActionButtonInput');
+
+var checkboxVectorDistrInputBinding = new Shiny.InputBinding();
+$.extend(checkboxVectorDistrInputBinding, {
+    find: function(scope) {
+      return $(scope).find('.shiny-checkboxvdistr-input');
+    },
+    getId: function(el) {
+      return Shiny.InputBinding.prototype.getId.call(this, el) || el.name;
+    },
+    getValue: function(el) {
+      var id = $(el).attr("id");
+      var res = new Array();
+      $("#"+id).find(":checked").each(function(i, v) {
+        res.push($(v).attr("value"));
+      });
+      return(res);
+  	},
+    setValue: function(el) {
+    },
+    subscribe: function(el, callback) { 
+      var id = $(el).attr("id");
+      var self = this;
+  	  $("#"+id).on("click", function(event) {
+  		  callback(true);
+  	  });
+    },
+    unsuscribe: function(el) {
+      
+    },
+    receiveMessage: function(el, data) {
+      var id = $(el).attr("id");
+    	if (data.hasOwnProperty('distributions')) {
+        this.distributions[id] = data.distributions;
+  			for (var i=0; i<data.distributions.length; i++) {
+  				$("#"+id).append("<input type='checkbox' value='" + data.distributions[i] + "' checked>" + data.distributions[i] + "</input><br>");
+  			}
+        $("#"+id).trigger('click');
+  		}
+    },
+    getState: function(el) {
+    },
+    getRatePolicy: function() {
+		  return {
+			  policy: 'debounce',
+			  delay: 700
+		  };
+	  },
+    initialize: function(el) {
+      this.distributions = new Array();
+    }
+});
+Shiny.inputBindings.register(checkboxVectorDistrInputBinding, 'shiny.checkboxVectorDistrInputBinding');
+
+var selectVectorDistrInputBinding = new Shiny.InputBinding();
+$.extend(selectVectorDistrInputBinding, {
+  find: function(scope) {
+      return $(scope).find('.shiny-vdistr-input');
+    },
+  getId: function(el) {
+      return Shiny.InputBinding.prototype.getId.call(this, el) || el.name;
+    },
+	getValue: function(el) {
+    var distributions = new Object();
+    var id = $(el).attr("id");
+    $("* [id^='"+ id +"-select-']").each(function(index) {
+      var params = new Array();
+		  $("#"+id+"-distrInputs-"+(index+1)).find("input[type=number]").each(function() {
+			  params.push({name: $(this).attr("name"), value: $(this).val()});
+		  });
+      distributions[index] = {distribution: parseInt($(this).val())+1, params: params};
+    });
+    return(distributions);
+	},
+  setValue: function(el, value) {
+  },
+	subscribe: function(el, callback) {
+    var id = $(el).attr("id");
+    var self = this;
+    $("* [id^='"+id+"-select-']").each(function(index) {
+      $(this).on("change", function(event) {
+		    event.stopImmediatePropagation();
+        var paramDiv = $("#"+ id +"-distrInputs-" + (index+1));
+        paramDiv.empty();
+		    var selected = $(this).val();
+		    var parameters = self.distributions[id][index][selected].params;
+	  	  for(var i=0; i<parameters.length; i++) {
+			    paramDiv.append("<label>"+parameters[i].name+ ": </label><input id='"+ id + "-distrInput-"+ (index+1) + "-" + parameters[i].name+ "' name='"+ parameters[i].name + "' value='"+ parameters[i].value +"' style='width:4.5em;' type='number'/><br><br>");
+			    $("#"+id+"-distrInput-"+ (index+1)+"-"+parameters[i].name).on("change", {posparam:i, posselect:index}, function(event) {
+            self.distributions[id][event.data.posselect][selected].params[event.data.posparam].value = $(this).val();
+		      	});
+		    }
+	    });
+    });
+    
+  $("#"+id+"-numNodes").on("change", function(event){
+      event.stopImmediatePropagation();
+      var prevvalue = parseInt($(this).attr("prev-value"));
+      self._generateNodeSelects(el, prevvalue, $(this).val());
+      $(this).attr("prev-value", $(this).val());
+      $("* [id^='"+id+"-select-']").each(function() {
+          $(this).trigger('change');
+  	  });
+  });
+  
+  $(el).on("send.selectVectorDistrInputBinding", function(event) {
+    event.stopImmediatePropagation();
+		callback(false);
+	});
+  },
+  receiveMessage: function(el, data) {
+    var id = $(el).attr("id");
+    var self = this;
+    if (!self.distributions.hasOwnProperty(id))
+      self.distributions[id] = new Array();
+      
+  	if (data.hasOwnProperty('distributions')) {
+      //Se guarda una copia de la distribuciones base para copiarlas en caso de ser necesario
+      self.distributions[id].masterdistributions = data.distributions;
+			for (var i=0; i<data.distributions.length; i++) {
+				$("* [id^='"+id+"-select-']").each(function(index) {
+            self.distributions[id][index]= $.extend(true, {}, data.distributions);
+  			    $(this).append("<option value=" + i + ">" + data.distributions[i].name + "</option>");
+			  });
+			}
+		}
+    
+    var defval = $(el).attr("defaultvalue");
+    if (defval != null) {
+      defval = eval("(" + defval + ")");
+      for(i=0; i<defval.length; i++) {
+        self.distributions[id][i][defval[i].id-1].params = defval[i].params;
+        $("#"+id+"-select-"+(i+1)).val(defval[i].id-1);
+      }
+    }
+		$("* [id^='"+id+"-select-']").each(function() {
+        $(this).trigger('change');
+  	});
+    
+    $(el).trigger("send");
+	},
+	getState: function(el) {
+  },
+	initialize: function(el) {
+    var id = $(el).attr("id");
+    this.distributions = new Array();
+    
+    var numNodes = 2;
+    var defval = $(el).attr("defaultvalue");
+    if (defval != null) {
+      defval = eval("(" + defval + ")");
+      numNodes = defval.length;
+    }
+      
+    $(el).append("<button id='"+ id +"-manualInput' class='btn btn-info'>Edit/View</button>" +
+                  "<div id='"+ id + "-div'>" +
+                    "<label for='" + id + "-numNodes' style='display:inline-block; margin-right: 10px;'>Number of nodes: </label><input id='"+ id +"-numNodes' type=number value="+ numNodes +" prev-value="+ numNodes + "><hr><span></span>" + 
+                  "</div>")
+    $("#"+id+"-div").dialog({
+  	    autoOpen: false,
+			resizable: false,
+			height: 600,
+			width: 800,
+			resizable: true,
+			modal: true,
+			buttons: {
+				Ok: function() {
+					$(el).trigger("send.selectVectorDistrInputBinding");
+					$(this).dialog("close");
+				},
+				Cancel: function() {
+					$(this).dialog("close");
+				}
+			}
+		});
+    
+    $("#" + id + "-manualInput").button().click(function() {
+  		$("#" + id + "-div").dialog("open");
+		});
+    
+   this._generateNodeSelects(el, 0, $("#"+ id + "-numNodes").val());
+  },
+  _generateNodeSelects: function(el, prevval, newval) {
+      var id = $(el).attr("id");
+      var self = this;
+      var distrzone = $("#"+ id + "-div").find("span");
+      if (prevval == 0 || newval > prevval) {
+        //Shiny.unbindAll();
+        for (i=(prevval+1); i<=newval; i++) {
+          distrzone.append("<label for='"+ id + "-select-"+i+"'><u><b>Node "+ i +":</b></u></label><select id='" + id + "-select-"+i+"' style='display:block; margin-top:15px;'></select>").append("<div id='" + id + "-distrInputs-" + i +"' style='display:inline; height:20px; width:auto;'></div>");
+          //Si hay cargada una lista de distribuciones (maestra, cargamos las <option> en el nuevo <select>
+          if ((self.distributions[id] != undefined) && (self.distributions[id].hasOwnProperty("masterdistributions"))) {
+            if (self.distributions[id][i-1] == undefined)
+              self.distributions[id][i-1] = $.extend(true, {}, self.distributions[id].masterdistributions);
+            for(j=0; j<self.distributions[id].masterdistributions.length; j++) {
+              $("#"+id+"-select-"+i).append("<option value="+j+">"+ self.distributions[id][i-1][j].name + "</option>");
+            }
+          }
+        }
+        Shiny.bindAll(distrzone);
+      } else if (prevval > newval) {
+        for (i=prevval; i>newval; i--) {
+          $("#"+id+"-select-"+i).remove();
+          $("#"+id+"-distrInputs-"+i).remove();
+        }
+      }
+  }
+});
+Shiny.inputBindings.register(selectVectorDistrInputBinding, 'shiny.selectVectorDistrInput');
 
 var selectDistrInputBinding = new Shiny.InputBinding();
 $.extend(selectDistrInputBinding, {
@@ -71,7 +338,7 @@ $.extend(selectDistrInputBinding, {
 		var selected = $(this).val();
 		var parameters = self.distributions[id][selected].params;
 		for(var i=0; i<parameters.length; i++) {
-			$("#distrInputs"+id).append("<label>"+parameters[i].name+ ": </label><input id='distrInput-"+parameters[i].name+ "-" + id + "' name='"+ parameters[i].name + "' value='"+ parameters[i].value +"' style='width:4.5em;' type='number'/>");
+			$("#distrInputs"+id).append("<label style='display:inline-block;margin-left:15px;'>"+parameters[i].name.capitalize()+ ": </label><input id='distrInput-"+parameters[i].name+ "-" + id + "' name='"+ parameters[i].name + "' value='"+ parameters[i].value +"' style='display:inline-block;width:4.5em;margin-left:5px;' type='number'/>");
 			$("#distrInput-"+parameters[i].name + "-" + id).on("change", {posparam:i}, function(event) {
         self.distributions[id][selected].params[event.data.posparam].value = $(this).val();
         callback(false);
@@ -106,7 +373,7 @@ $.extend(selectDistrInputBinding, {
 		this.distributions = new Array();
 		var id = $(el).attr("id");
     if (!this.distributions.hasOwnProperty(id)) {
-  		$(el).append("<select id='select" + id + "' style='display:inline'></select>").append("<div id='distrInputs" + id + "' style='display:inline; height:20px; width:auto;'></div>");
+  		$(el).append("<select id='select" + id + "' style='display:inline'></select>").append("<div id='distrInputs" + id + "' style='display:inline-block; height:20px; width:auto;'></div>");
     }
 	}
 });
@@ -125,8 +392,8 @@ $.extend(vectorInputBinding, {
 	  res = new Array();
 	  numbers = el.value.split(";")
 	  for(i=0; i<numbers.length; i++)
-		res.push(parseInt(numbers[i]));
-      return (res);
+		  res.push(parseInt(numbers[i]));
+    return (res);
     },
 	setValue: function(el, value) {
       el.value = value;
@@ -140,7 +407,6 @@ $.extend(vectorInputBinding, {
       $(el).off('.vectorInputBinding');
     },
 	receiveMessage: function(el, data) {
-		console.log("Recivido vector: " + data);
 		  if (data.hasOwnProperty('value') && data.value != null) {
   			res = "";
   			for(var i=0; i<data.value.length; i++) {
@@ -150,7 +416,6 @@ $.extend(vectorInputBinding, {
 		  }
      
 		  if (data.hasOwnProperty('label') && data.label != null) {
-        console.log("Label: " + data.label);
 			  $(el).parent().find('label[for=' + el.id + ']').html("<b>" + data.label + "</b>");
 		  }
 		  $(el).trigger('change');
@@ -219,7 +484,6 @@ $.extend(matrixInputBinding, {
 	},
 	receiveMessage: function(el, data) {
 		  var id = $(el).attr("id");	
-		  console.log(data);
 		  if (data.hasOwnProperty('value') && data.hasOwnProperty('size')) {
 			$("#"+id+"-numNodes").val(data.size).trigger("change");
 			for(var i=0; i<data.size; i++)
@@ -234,7 +498,7 @@ $.extend(matrixInputBinding, {
 			this.matrix = new Array();	
 			
 		var id = $(el).attr("id");		
-		$(el).append("<button id='"+ id +"-manualInput'>Manual Input</button>" +
+		$(el).append("<button id='"+ id +"-manualInput' class='btn btn-info'>Edit/View</button>" +
 					  "<div id='"+ id +"-manualDialog' style='maxHeight:520; maxWidth:1200'>" +
 							"<label for='" + id + "-numNodes'>Number of nodes: </label><input id='"+ id +"-numNodes' type=number value=5 prev-value=5 min=1 max=10/><br><br>" +
 							"<center><table id='" + id + "-table'></table></center>" +
@@ -293,7 +557,10 @@ $.extend(matrixInputBinding, {
 				Cancel: function() {
 					$(this).dialog("close");
 				}
-			}
+			},
+      create: function() {
+        $(this).closest('.ui-dialog').find('.ui-button').addClass("btn").addClass("btn-info");
+      }
 		});
 		
 		$("#" + id + "-manualInput").button().click(function() {
@@ -387,6 +654,99 @@ $.extend(matrixInputBinding, {
 });
 Shiny.inputBindings.register(matrixInputBinding, 'shiny.matrixInputBinding');
 
+var debounce = function(threshold, func) {
+    var timerId = null;
+    var self, args;
+    return function() {
+      self = this;
+      args = arguments;
+      if (timerId !== null) {
+        clearTimeout(timerId);
+        timerId = null;
+      }
+      timerId = setTimeout(function() {
+        timerId = null;
+        func.apply(self, args);
+      }, threshold);
+    };
+  }
+  
+var mydatatableOutputBinding = new Shiny.OutputBinding();
+  $.extend(mydatatableOutputBinding, {
+    find: function(scope) {
+      return $(scope).find('.shiny-mydatatable-output');
+    },
+    onValueError: function(el, err) {
+      //Shiny.unbindAll(el);
+      this.renderError(el, err);
+    },
+    renderError : function(el, err) {
+      $(el).empty();
+      $(el).append("<p class='shiny-output-error'>"+err.message+"</p>");
+    },
+    renderValue: function(el, data) {
+      var $el = $(el).empty();
+      if (!data || !data.colnames) return;
+      if(data.options.hasOwnProperty("colnames")) 
+        var colnames = $.makeArray(data.options.colnames);
+      else 
+        var colnames = $.makeArray(data.colnames);
+      var header = colnames.map(function(x, i) {
+        if (i==0 && data.options.hasOwnProperty("rowHeaders") && !data.options.rowHeaders) {
+          if (x == "X_empty" || x===undefined)
+            return '<th></th>';
+        }
+        return '<th><b>' + x + '</b></th>';
+      }).join('');
+      if (data.options.hasOwnProperty("mainTitle")) {
+         header = '<thead><tr><th colspan='+ colnames.length  +' class="ui-state-default"><b>'+ data.options.mainTitle +'</b></th></tr><tr>' + header + '</tr></thead>';
+      } else{
+         header = '<thead><tr>' + header + '</tr></thead>';
+      }
+    if(!data.options.hasOwnProperty("noFooter")) {
+  	  var footer = colnames.map(function(x) {
+			return '<th><input type="text" placeholder="' + x + '" /></th>';
+		  }).join('');
+		  footer = '<tfoot>' + footer + '</tfoot>';
+	  } else {
+		  footer= "";
+	  }
+      var content = '<table class="table table-striped table-hover">' +
+                    header + footer + '</table>';
+      $el.append(content);
+      var oTable = $(el).children("table").dataTable($.extend({
+        "bProcessing": true,
+        "bServerSide": true,
+        "aaSorting": [],
+        "bSortClasses": false,
+        "iDisplayLength": 25,
+        "sAjaxSource": data.action,
+        "fnInitComplete": function() {
+                             if (data.options.hasOwnProperty("rowHeaders") && data.options.rowHeaders) {
+                               $(el).find("table tbody").find("tr").each(function(){
+                                    var td = $(this).find("td").first();
+                                    td.addClass("ui-state-default");
+                                    td.html("<b>"+td.html()+"</b>");
+                               });
+                             }
+                             Shiny.bindAll($(el));
+                          }
+        }, data.options));
+      // use debouncing for searching boxes
+      $el.find('label input').first().unbind('keyup')
+           .keyup(debounce(data.searchDelay, function() {
+              oTable.fnFilter(this.value);
+            }));
+      var searchInputs = $el.find("tfoot input");
+      searchInputs.keyup(debounce(data.searchDelay, function() {
+        oTable.fnFilter(this.value, searchInputs.index(this));
+      }));
+      // FIXME: ugly scrollbars in tab panels b/c Bootstrap uses 'visible: auto'
+      $el.parents('.tab-content').css('overflow', 'visible');
+    }
+  });
+Shiny.outputBindings.register(mydatatableOutputBinding, 'shiny.mydatatableOutput');
+
 var networkOutputBinding = new Shiny.OutputBinding();
 $.extend(networkOutputBinding, {
 	find: function(scope) {
@@ -402,16 +762,55 @@ $.extend(networkOutputBinding, {
 			$(el).append("<canvas id='" + id + "-graphcanvas' width=850 height=540></canvas>");
 			this.particleSystem[id] = arbor.ParticleSystem(1000, 50, 0.5, true);
 			this.particleSystem[id].renderer = new this._Renderer("#" + id + "-graphcanvas");
+      var distrLetter = function(s) {
+          if (s.substr(0,1) == "-") return("-");
+          if (s.substr(0,3) == "Exp")
+            return("M");
+          else
+            return("G");
+      }
 			for(i=0;  i<data.s.length; i++) {
-				this.particleSystem[id].addNode(i+1, {s: data.s[i]});
-				$(el).append("<div id='" + id + "-node-" + (i+1) + "'><b>Node " + (i+1) + ": </b><br>"+
-										      "Lambda: " + data.lambda[i] + "<br>" +
-											  "Mu: " + data.mu[i] + "<br>" +
-											  "S: " + data.s[i] + "<br>" +
-											  "L: " + data.l[i] + "<br>" +
-											  "Lq: " + data.lq[i] + "<br>" +
-											  "W: " + data.w[i] + "<br>" +
-											  "Wq: " + data.wq[i] + "<br></div>");
+        switch(data.type) {
+          case "Jackson": {
+            this.particleSystem[id].addNode(i+1, {s: data.s[i], nodeText: "M/M/"});
+    			  $(el).append("<div id='" + id + "-node-" + (i+1) + "'><b>Node " + (i+1) + ": </b><br>"+
+  										      "Lambda: " + data.lambda[i] + "<br>" +
+  											    "Mu: " + data.mu[i] + "<br>" +
+  											    "S: " + data.s[i] + "<br>" +
+  											    "L: " + data.l[i] + "<br>" +
+  											    "Lq: " + data.lq[i] + "<br>" +
+  											    "W: " + data.w[i] + "<br>" +
+  											    "Wq: " + data.wq[i] + "<br></div>");
+            break;
+          }
+          case "Open": {
+            var nodetext = distrLetter(data.arrivaldistr[i]) + "/" + distrLetter(data.servicedistr[i]) + "/";
+            this.particleSystem[id].addNode(i+1, {s: data.s[i], nodeText: nodetext});
+            $(el).append("<div id='" + id + "-node-" + (i+1) + "'><b>Node " + (i+1) + ": </b><br>"+
+                            "Arrival Distr.: " + data.arrivaldistr[i] + "<br>" +
+                            "Service Distr.: " + data.servicedistr[i] + "<br>" +
+    											  "S: " + data.s[i] + "<br>" +
+    											  "L: " + data.l[i] + "<br>" +
+    											  "Lq: " + data.lq[i] + "<br>" +
+    											  "W: " + data.w[i] + "<br>" +
+    											  "Wq: " + data.wq[i] + "<br></div>");
+            break;
+            
+          }
+          case "Closed": {
+            var nodetext = "M/" + distrLetter(data.servicedistr[i]) + "/";
+            this.particleSystem[id].addNode(i+1, {s: data.s[i], nodeText: nodetext});
+            $(el).append("<div id='" + id + "-node-" + (i+1) + "'><b>Node " + (i+1) + ": </b><br>"+
+                            "Service Distr.: " + data.servicedistr[i] + "<br>" +
+      										  "S: " + data.s[i] + "<br>" +
+    											  "L: " + data.l[i] + "<br>" +
+    											  "Lq: " + data.lq[i] + "<br>" +
+    											  "W: " + data.w[i] + "<br>" +
+    											  "Wq: " + data.wq[i] + "<br></div>");
+            break;
+          }
+        }
+          
 				$("#" + id + "-node-" + (i+1)).hide().css("position", "absolute").css("background-color", "white").css("border-style", "solid").css("border-width", "2px").css("border-color", "black").css("padding", "2px 2px 2px 2px");
 			}
 			for(i=0; i<data.s.length; i++) {
@@ -423,7 +822,6 @@ $.extend(networkOutputBinding, {
 				   }
 				}
         divProb += "</div>";
-        console.log(divProb);
         $(el).append(divProb)
         $("#" + id + "-node-" + (i+1) + "-probs").hide().css("position", "absolute").css("background-color", "white").css("border-style", "solid").css("border-width", "2px").css("border-color", "black").css("padding", "2px 2px 2px 2px");
 			}
@@ -635,9 +1033,9 @@ $.extend(networkOutputBinding, {
 				ctx.fillStyle = (node.data.p) ? "orange" : "white"
 				ctx.fill();
 				ctx.fillStyle = "black";
-				var sizeText = ctx.measureText("M/M/"+node.data.s);
+				var sizeText = ctx.measureText(node.data.nodeText+node.data.s);
 				ctx.fillText("Node " + node.name, pt.x-ctx.measureText("Node " + node.name).width/2, pt.y-15);
-				ctx.fillText("M/M/"+node.data.s, pt.x - sizeText.width/2, pt.y);
+				ctx.fillText(node.data.nodeText + node.data.s, pt.x - sizeText.width/2, pt.y);
 				ctx.lineWidth = 1;
 				ctx.strokeStyle = '#000000';
 				ctx.stroke();
@@ -661,7 +1059,7 @@ $.extend(networkOutputBinding, {
 					if (!nearest.node) return false;
 					if (nearest.distance < 50) {
 						$("#" + id + "-node-" + nearest.node.name).css("left", _mouseP.x+50).css("top", _mouseP.y+70).show();
-            $("#" + id + "-node-" + dragged.node.name + "-probs").css("left", _mouseP.x+50).css("top", _mouseP.y+70);
+            $("#" + id + "-node-" + nearest.node.name + "-probs").css("left", _mouseP.x+50).css("top", _mouseP.y+70);
 					}
 					else{
 						$("#" + id + "-node-" + nearest.node.name).hide();
@@ -800,7 +1198,7 @@ $.extend(graphInputBinding, {
 			this.sys = new Array();
 		
 		var id = $(el).attr("id");
-		$(el).append("<button id='"+ id +"-manualInput'>Manual Input</button>" +
+		$(el).append("<button id='"+ id +"-manualInput'>Edit/View</button>" +
 					  "<div id='"+ id +"-manualDialog'>" +
 							"<label for='" + id + "-numNodes'>Number of nodes: </label><input id='"+ id +"-numNodes' type=number value=5 min=1 max=10/>" +
 							"<canvas id='" + id + "-graphcanvas' width=565 height=440></canvas>" +
@@ -1094,10 +1492,10 @@ Shiny.inputBindings.register(graphInputBinding, 'shiny.graphInputBinding');*/
 	subscribe: function(el, callback) {
 		var self = this;
 		$(el).on('updateTabsAdd.tabInputBinding', function(event) {
-			Shiny.unbindAll();
+			Shiny.unbindAll($(el).children("div:last"));
 			$(el).tabs("refresh");
 			$(el).tabs("option", "active", self.infoTabs[$(el).attr("id")].size - 1);
-			Shiny.bindAll();
+			Shiny.bindAll($(el).children("div:last"));
 			callback(false);
 		});
 		
@@ -1156,8 +1554,13 @@ Shiny.inputBindings.register(graphInputBinding, 'shiny.graphInputBinding');*/
 							});
 						});
 						
-						$el.append("<div id='"+ $el.attr("id") +"-tag-"+ tabObject.total + "'>" + data.value[i].content + "</div>\n");
+						$el.append("<div id='"+ $el.attr("id") +"-tag-"+ tabObject.total + "'>" + data.value[i].content + "</div>\n"); 
+            //Si es la plantilla de los modelos actualizamos las alturas
 						Shiny.initializeInputs($("#"+$el.attr("id") +"-tag-"+ tabObject.total));
+            if ($el.attr("id").indexOf("ModelOutputTabs") > -1 ) {
+              $el.css('overflow', 'scroll');
+            }
+            resizeColumns($("#" + $el.attr("id") + "-tag-" + tabObject.total));
 						$el.trigger('updateTabsAdd');
 					}	
 				}	
@@ -1289,7 +1692,6 @@ Shiny.inputBindings.register(graphInputBinding, 'shiny.graphInputBinding');*/
 			if (data.step != null)
 				step = data.step
 
-		console.log(ran + ", " + min + ", " + max + ", " + step + ", " + values);
 		$(el).slider("destroy");
 		$(el).slider({
 			range:ran,
@@ -1325,3 +1727,43 @@ Shiny.inputBindings.register(graphInputBinding, 'shiny.graphInputBinding');*/
   });
   Shiny.inputBindings.register(JqueryUIsliderInputBinding, 'shiny.JqueryUIsliderInput');
   
+$(window).on("resize", function(){
+        resizeColumns($("#results").find("[aria-expanded=true]").first());
+});
+  
+function resizeColumns (scope) {
+  var desiredHeight = $("#menu").height();
+  var InputDataBox = $(scope).find(".InputDataBox").first();
+  var InputHeight = InputDataBox.height();
+  var difference = desiredHeight-InputHeight-62;
+  if (difference != null) {
+    if(InputDataBox.is("[alone]")) {
+      InputDataBox.css("min-height", InputHeight);
+      InputDataBox.height(desiredHeight-30);
+    } else {
+      var ToolsBox = $(scope).find(".ToolsBox").first();
+      if ($(ToolsBox).attr("data-fixedHeight") == null) {
+        $(ToolsBox).css("min-height", $(ToolsBox).height()+20);
+        $(ToolsBox).attr("data-fixedHeight", "true");
+      }
+      $(ToolsBox).height(difference);
+      
+      if (InputHeight + $(ToolsBox).height() > desiredHeight)
+        $("#menu").height(InputHeight + $(ToolsBox).height());
+    }
+    
+    var ModelOutput = $(scope).find(".ModelOutputBox").first()
+    if ($(ModelOutput).attr("data-fixedHeight") === undefined) {
+        $(ModelOutput).css("min-height",  parseFloat($(ToolsBox).css("min-height"))+InputHeight+35);
+        $(ModelOutput).attr("data-fixedHeight", "true");
+    }
+    $(ModelOutput).height(desiredHeight-30);
+    
+    var ModelOutputTabs = $(ModelOutput).find(".ModelOutputTabs").first();
+    if ($(ModelOutputTabs).attr("data-fixedHeight") === undefined) {
+        $(ModelOutputTabs).css("min-height",  parseFloat($(ToolsBox).css("min-height"))+InputHeight-70);
+        $(ModelOutputTabs).attr("data-fixedHeight", "true");
+    }
+    $(ModelOutputTabs).height(desiredHeight-120);
+  }
+}
