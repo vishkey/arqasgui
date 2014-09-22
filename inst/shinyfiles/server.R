@@ -1,5 +1,10 @@
-devtools::install_github("arqas", "vishkey")
-devtools::install_github("arqasgui", "vishkey")
+library(distr)
+library(reshape)
+library(ggplot2)
+library(doParallel)
+library(foreach)
+library(fitdistrplus)
+library(gridExtra)
 library(arqas)
 library(arqasgui)
 
@@ -1240,31 +1245,33 @@ tonumeric <- function(x) {
       a <- c(a, x[[i]])
     return(a)
 }
-
+initialize <- TRUE
 shinyServer(function(input, output, session) {
-  options(shiny.usecairo=FALSE)
-  initMenu <- list(
-                list(id = 0, title="Markovian models", submenu=generateMenu(uiList[sapply(sapply(uiList, class), function(v) {any(v=="MarkovianModel")}, simplify="array")])),
-                list(id = 0, title="Simulated Models", submenu=generateMenu(uiList[sapply(sapply(uiList, class), function(v) {any(v=="SimulatedModel")}, simplify="array")])),
-                list(id = length(uiList)+1, title="Data analysis", submenu=list())
-              )
-  isolate({
-    updateMenuInput(session, "menu", action=list("set"), menu=initMenu)
-    updateTabInput(session, "results", action=list("add"), value=list(newTab("Start", "Select a model in the menu at left to start.")), removeButton=TRUE)
-  })
-  dataAnalysisModel <- list()
-  class(dataAnalysisModel) <- "DataAnalysis"
-  observe({
-    if (!is.null(input$menu$clicked)){
-      isolate({
-              id <- as.numeric(input$menu$selected)
-               switch(as.character(input$menu$selected),
-                      "0" = NULL, 
-                      loadUIModel(uiList[[id]], session, input, output),
-                      "21" = loadUIModel(dataAnalysisModel, session, input, output)
-               )
-      })
-    }
-  }) 
-  
+  if (initialize) {
+    options(shiny.usecairo=FALSE)
+    initMenu <- list(
+                  list(id = 0, title="Markovian models", submenu=generateMenu(uiList[sapply(sapply(uiList, class), function(v) {any(v=="MarkovianModel")}, simplify="array")])),
+                  list(id = 0, title="Simulated Models", submenu=generateMenu(uiList[sapply(sapply(uiList, class), function(v) {any(v=="SimulatedModel")}, simplify="array")])),
+                  list(id = length(uiList)+1, title="Data analysis", submenu=list())
+                )
+    isolate({
+      updateMenuInput(session, "menu", action=list("set"), menu=initMenu)
+      updateTabInput(session, "results", action=list("add"), value=list(newTab("Start", "Select a model in the menu at left to start.")), removeButton=TRUE)
+    })
+    dataAnalysisModel <- list()
+    class(dataAnalysisModel) <- "DataAnalysis"
+    observe({
+      if (!is.null(input$menu$clicked)){
+        isolate({
+                id <- as.numeric(input$menu$selected)
+                 switch(as.character(input$menu$selected),
+                        "0" = NULL, 
+                        loadUIModel(uiList[[id]], session, input, output),
+                        "21" = loadUIModel(dataAnalysisModel, session, input, output)
+                 )
+        })
+      }
+    })
+    initialize <<- FALSE
+  }
 })
