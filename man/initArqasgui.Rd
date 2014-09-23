@@ -3,7 +3,7 @@
 \alias{initArqasgui}
 \title{Run the interface}
 \usage{
-initArqasgui()
+initArqasgui(host = NULL)
 }
 \description{
 Run the interface

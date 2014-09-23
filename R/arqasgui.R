@@ -181,6 +181,6 @@ exportToUI(ClosedNetwork, "Closed Network",
 
 #' Run the interface
 #' @export
-initArqasgui <- function() {
-  runApp(system.file("shinyfiles", package="arqasgui"))
+initArqasgui <- function(host=NULL) {
+  runApp(system.file("shinyfiles", package="arqasgui"), host=host)
 }

@@ -1492,13 +1492,22 @@ Shiny.inputBindings.register(graphInputBinding, 'shiny.graphInputBinding');*/
 	subscribe: function(el, callback) {
 		var self = this;
 		$(el).on('updateTabsAdd.tabInputBinding', function(event) {
-			Shiny.unbindAll($(el).children("div:last"));
-			$(el).tabs("refresh");
-			$(el).tabs("option", "active", self.infoTabs[$(el).attr("id")].size - 1);
-			Shiny.bindAll($(el).children("div:last"));
-			callback(false);
+      var dfd = $.Deferred();
+      dfd.done(function() {
+                  Shiny.unbindAll($(el).children("div:last"));
+               }).done( 
+               function() {
+                 $(el).tabs("refresh");
+                 
+               }).done(
+               function() {
+                 $(el).tabs("option", "active", self.infoTabs[$(el).attr("id")].size - 1);
+            		 Shiny.bindAll($(el).children("div:last"));
+            		 callback(false);
+               });
+      dfd.resolve();
 		});
-		
+    
 		$(el).on('updateTabsRemove.tabInputBinding', function(event) {
 			$(el).tabs("refresh");
 			callback(true);
@@ -1541,7 +1550,6 @@ Shiny.inputBindings.register(graphInputBinding, 'shiny.graphInputBinding');*/
 							$ul.append(newTab);
 						}
 							
-						//$ul.append("<li><a href='#"+ $el.attr("id") +"-tag-"+ tabObject.total + "'>" + data.value[i].title + "</a><span class='ui-icon ui-icon-close' role='presentation'>Remove Tab</span></li>\n");
 						$ul.find("li:last").each(function() {
 							$(this).on("click", function() {
 								$el.trigger("shown");
