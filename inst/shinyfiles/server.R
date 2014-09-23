@@ -1,13 +1,3 @@
-library(distr)
-library(reshape)
-library(ggplot2)
-library(doParallel)
-library(foreach)
-library(fitdistrplus)
-library(gridExtra)
-library(arqas)
-library(arqasgui)
-
 toDatatable <- function(qm, ...) {UseMethod("toDatatable", qm)}
 
 toDatatable.MarkovianModel <- function(qm) {
