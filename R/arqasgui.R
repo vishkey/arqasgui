@@ -30,9 +30,21 @@ addFolder <- function(folder) {
 #' @return TRUE if everything goes well
 #' @export
 resetIni <- function() {
- path <- system.file("userRoutes.ini", package="arqasgui")
- file.remove(path)
- file.create(path)
+  path <- system.file("userRoutes.ini", package="arqasgui")
+  file.remove(path)
+  file.create(path)
+}
+
+#' Function to create a new list structure
+#' @export
+#' @keywords internal
+ListStructure <- function() {
+        value <- list()
+        
+        get <- function() {return(value)}
+        set <- function(v) {value <<- v}
+        
+        return(list(get=get, set=set))
 }
 
 #' List of export models to the UI
@@ -43,18 +55,17 @@ uiList <- list()
 #' List of registered distributions to the UI
 #' @export
 #' @keywords internal
-distrList <- list()
+distrList <- ListStructure()
 
 # The empty distribution gonna be always the last one.
-distrList[[1]] <- list(id=1, name="No Arrivals", fun=function(){})
+aux <- list()
+aux[[1]] <- list(id=1, name="No Arrivals", fun=function(){})
+
+distrList$set(aux)
 
 #' Counter of exported funtions
 #' @keywords internal
 exportedFunctions <- 0
-
-#' Counter of registered distributions
-#' @keywords internal
-registeredDistributions <- 1
 
 #' Exports a function to the UI
 #' 
@@ -76,14 +87,17 @@ exportToUI <- function(fun, name, args, class) {
 #' @param fun Function of the distribution
 #' @param name Name of the distribution
 #' @param index Create a label in the list with the name of the distribution
+#' @return the new value of distrList
 #' @export
 registerDistribution <- function(fun, name, index=FALSE) {
-  registeredDistributions <<- registeredDistributions + 1
+  distrTemp <- distrList$get()
   
-  emptyDistr <- distrList[[length(distrList)]]
+  registeredDistributions <- length(distrTemp) + 1
+  
+  emptyDistr <- distrTemp[[length(distrTemp)]]
   el <- list(id=registeredDistributions-1, name=name, fun=fun)
   
-  auxList <- distrList[-length(distrList)]
+  auxList <- distrTemp[-length(distrTemp)]
   
   if (index) {
     auxList[[class(fun())[1]]] <- el
@@ -91,7 +105,7 @@ registerDistribution <- function(fun, name, index=FALSE) {
     auxList[[registeredDistributions-1]] <- el
   }
   
-  distrList <<- c(auxList, list(list(id=registeredDistributions, name=emptyDistr$name, fun=emptyDistr$fun)))
+  distrList$set(c(auxList, list(list(id=registeredDistributions, name=emptyDistr$name, fun=emptyDistr$fun))))
 }
 
 #Register in the UI the default distributions

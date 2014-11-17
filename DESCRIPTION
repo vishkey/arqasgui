@@ -1,11 +1,11 @@
 Package: arqasgui
 Type: Package
 Title: Provides a graphical interface for the package Arqas
-Version: 1.4
+Version: 0.494
 Date: 27-12-2013
 Author: Borja Varela
 Maintainer: Borja Varela <borja.varela@udc.es>
-Depends: R (>= 1.8.0), shiny, arqas
+Depends: R (>= 1.8.0), base64, shiny, arqas
 Description: A graphic interface for the package Arqas
 License: GPL (>= 2)
 LazyData: yes

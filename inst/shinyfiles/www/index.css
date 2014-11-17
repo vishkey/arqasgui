@@ -2,10 +2,10 @@ body {
 	font-size: 12px;
 }
 
-
 #menu {
 	
-  height: calc(99% - 55px);
+    height: -webkit-calc(99% - 55px);
+    height: -moz-calc(99%-55px);
 	width: 70%;
 	z-index: 1;
 }
@@ -13,8 +13,9 @@ body {
 #results {
 	min-height: 99%;
 	left: -80px;
-  height:auto;
-	width: calc(100% + 80px);
+    height:auto;
+	width: -webkit-calc(100% + 80px);
+	width: -moz-calc(100% + 80px);
 	z-index: 2;
 }	
 
@@ -82,15 +83,21 @@ select {
 	width:4.5em;
 }
 
+.ui-icon-close {
+	display: -moz-inline-stack;
+}
+
 
 @media (max-height: 800px) {
       body{font-size: 10px;}
       #results {
         left: -30px;
-        width: calc(105%);
+		width: -webkit-calc(105%);
+        width: -moz-calc(105%);
       }
       #menu {
-        min-height: calc(99% - 55px);
+		min-height: -webkit-calc(99% - 55px);
+        min-height: -moz-calc(99% - 55px);
         width: 90%;
 	      z-index: 1;
       }

@@ -1,5 +1,27 @@
 String.prototype.capitalize = function() {
     return this.charAt(0).toUpperCase() + this.slice(1);
+};
+
+String.prototype.endsWith = function(suffix) {
+    return this.indexOf(suffix, this.length - suffix.length) !== -1;
+};
+
+$.fn.scrollTo = function( target, options, callback ){
+  if(typeof options == 'function' && arguments.length == 2){ callback = options; options = target; }
+  var settings = $.extend({
+    scrollTarget  : target,
+    offsetTop     : 50,
+    duration      : 500,
+    easing        : 'swing'
+  }, options);
+  return this.each(function(){
+    var scrollPane = $(this);
+    var scrollTarget = (typeof settings.scrollTarget == "number") ? settings.scrollTarget : $(settings.scrollTarget);
+    var scrollY = (typeof scrollTarget == "number") ? scrollTarget : scrollTarget.offset().top + scrollPane.scrollTop() - parseInt(settings.offsetTop);
+    scrollPane.animate({scrollTop : scrollY }, parseInt(settings.duration), settings.easing, function(){
+      if (typeof callback == 'function') { callback.call(this); }
+    });
+  });
 }
 
 var JQueryActionButtonInputBinding = new Shiny.InputBinding();
@@ -102,6 +124,140 @@ $.extend(JQueryActionButtonInputBinding, {
 });
 Shiny.inputBindings.register(JQueryActionButtonInputBinding, 'shiny.JQueryActionButtonInput');
 
+var reportDatabase = function () {
+	this.reports = new Array();
+  
+	this.addReport = function(menu, body) {
+    this.reports.push({menu:menu, body:body});
+	};
+	
+	this.removeReport = function(index) {
+   this.reports.remove(index); 
+	};
+  
+  this.length = function() {
+    return(this.reports.length);
+  }
+};
+
+var SessionReports = new reportDatabase();
+
+var JQuerySaveReportInputBinding = new Shiny.InputBinding();
+$.extend(JQuerySaveReportInputBinding, {
+  find: function(scope) {
+      return $(scope).find(".shiny-savereport-input");
+    },
+    getValue: function(el) {
+      var id = $(el).attr("id");
+      var res = new Array();
+      $("#"+id + "-dialog").find(":checked").each(function(i, v) {
+        var val = $(v).attr("value");
+        var data = new Object();
+        var numTab = $(el).attr("id");
+        numTab = numTab.replace(/[^0-9]+/ig,"");
+        switch(val) {
+          case "probabilities" : {if ($("#PnQnMin"+ numTab).length == 0) {
+                                    data.from=parseInt($("#PnMin"+numTab).val());
+                                    data.to = parseInt($("#PnMax"+numTab).val());
+                                  }
+                                  else {
+                                    data.from=parseInt($("#PnQnMin"+numTab).val()); 
+                                    data.to=parseInt($("#PnQnMax"+numTab).val());
+                                  }
+                                  break;}
+          case "waitingtimes": {data.from=parseFloat($("#WtWqtMin"+numTab).val());
+                                data.to=parseFloat($("#WtWqtMax"+numTab).val());
+                                data.step=parseFloat($("#WtWqtStep"+numTab).val());
+                                break;}
+          case "probabilitiesplots": {data.from=parseInt($("#PnQnMin"+numTab).val()); 
+                                      data.to=parseInt($("#PnQnMax"+numTab).val());
+                                      break;}
+          case "waitingplots" : {data.from=parseFloat($("#WtWqtMin"+numTab).val());
+                                 data.to=parseFloat($("#WtWqtMax"+numTab).val());
+                                 data.step=parseFloat($("#WtWqtStep"+numTab).val());
+                                 break;}
+          case "combinedprobabilities" : {var combprobs = $("#pn1nk"+ numTab).val().replace(/;/gi, ",");
+                                          data.combinedprobabilities = JSON.parse("[" + combprobs + "]");
+                                         break;}
+          case "networkgraph" : {data.image = $("#networkDiv"+ numTab+"-graphcanvas")[0].toDataURL("image/png");
+                                 break;}
+          case "LEvolution" : {data.depth = parseInt($("#depth" + numTab).val()); break;}
+          case "LqEvolution": {data.depth = parseInt($("#depth" + numTab).val()); break;}
+          case "WEvolution" : {data.depth = parseInt($("#depth" + numTab).val()); break;}
+          case "WqEvolution": {data.depth = parseInt($("#depth" + numTab).val()); break;}
+          case "ClientsEvolution": {data.depth = parseInt($("#depth" + numTab).val());
+                                    data.nsim = $("#simulationSelector" + numTab).attr("value"); break;}
+          case "IntensityEvolution": {data.depth = parseInt($("#depth" + numTab).val());}
+          default: {data = null; break;}
+
+        }
+        res.push({val:val, data: data});
+      });
+      return({title: $("#"+id+"-title").val(), checkboxes:res, button: $(el).data("val"), nReports: SessionReports.length()});
+    },
+    setValue: function(el, value) {
+    },
+    subscribe: function(el, callback) {
+      var id = $(el).attr("id");
+      $(el).on("send.JQuerySaveReportInputBinding", function() {
+          $(el).data("val", parseInt($(el).data("val"))+1);
+          callback(false);  
+      });
+      
+      $("#"+id+"-button").on("click", function(){
+          $("#" + id + "-dialog").dialog("open");
+      });
+    },
+    getState: function(el) {
+    },
+    receiveMessage: function(el, data) {
+      var id = $(el).attr("id");
+      if ((data.action=="setSections") && data.hasOwnProperty("sections")) {
+        var insert = "<form class='pure-form pure-form-stacked'><fieldset>";
+        insert = insert + "<label for='" + id + "-title'>Title: </label><input id='" + id + "-title' type='text'></input>";
+        for (i in data.sections)
+          insert = insert + "<label for='"+ id +"-"+ i + "'><input id='"+ id +"-"+ i + "' type='checkbox' name='section' value='" + i + "'> "+ data.sections[i] +"</input></label>";
+        insert = insert + "</fieldset></form>";
+        $("#" + id + "-dialog").empty().append(insert);
+      } else if (data.action == "saveReport") {
+          SessionReports.addReport(data.html[0], data.html[1]);
+      }
+
+      if (data.disabled) {
+        $("#"+id+"-button").attr("disabled", "");
+      }else{
+        $("#"+id+"-button").removeAttr("disabled");
+      }
+    },
+    unsubscribe: function(el) {
+      $(el).off(".JQuerySaveReportInputBinding");
+    },
+  	initialize: function(el) {
+      var id = $(el).attr('id');
+      $(el).data("val", 0);
+      $(el).append("<div id='" + id + "-dialog'></div><button id='" + id + "-button' class='btn btn-primary'>Save report</button>");
+        
+        $("#" + id + "-button").button();
+      $("#" + id + "-dialog").dialog({
+            autoOpen: false,
+            resizable: false,
+            modal: true,
+            width: 330,
+      			buttons: {
+      				Ok: function() {
+      					$(el).trigger("send.JQuerySaveReportInputBinding");
+      					$(this).dialog("close");
+      				},
+      				Cancel: function() {
+                $(el).trigger("cancel.JQuerySaveReportInputBinding");
+      					$(this).dialog("close");
+      			  }	
+      		}
+		  });
+    }
+});
+Shiny.inputBindings.register(JQuerySaveReportInputBinding, 'shiny.JQuerySaveReportInputBinding');
+
 var checkboxVectorDistrInputBinding = new Shiny.InputBinding();
 $.extend(checkboxVectorDistrInputBinding, {
     find: function(scope) {
@@ -177,33 +333,11 @@ $.extend(selectVectorDistrInputBinding, {
   setValue: function(el, value) {
   },
 	subscribe: function(el, callback) {
-    var id = $(el).attr("id");
+    /*var id = $(el).attr("id");
     var self = this;
     $("* [id^='"+id+"-select-']").each(function(index) {
-      $(this).on("change", function(event) {
-		    event.stopImmediatePropagation();
-        var paramDiv = $("#"+ id +"-distrInputs-" + (index+1));
-        paramDiv.empty();
-		    var selected = $(this).val();
-		    var parameters = self.distributions[id][index][selected].params;
-	  	  for(var i=0; i<parameters.length; i++) {
-			    paramDiv.append("<label>"+parameters[i].name+ ": </label><input id='"+ id + "-distrInput-"+ (index+1) + "-" + parameters[i].name+ "' name='"+ parameters[i].name + "' value='"+ parameters[i].value +"' style='width:4.5em;' type='number'/><br><br>");
-			    $("#"+id+"-distrInput-"+ (index+1)+"-"+parameters[i].name).on("change", {posparam:i, posselect:index}, function(event) {
-            self.distributions[id][event.data.posselect][selected].params[event.data.posparam].value = $(this).val();
-		      	});
-		    }
-	    });
-    });
-    
-  $("#"+id+"-numNodes").on("change", function(event){
-      event.stopImmediatePropagation();
-      var prevvalue = parseInt($(this).attr("prev-value"));
-      self._generateNodeSelects(el, prevvalue, $(this).val());
-      $(this).attr("prev-value", $(this).val());
-      $("* [id^='"+id+"-select-']").each(function() {
-          $(this).trigger('change');
-  	  });
-  });
+      $(this).on("change",{id:id, self:self, index:index},  self._selectChange);
+    });*/
   
   $(el).on("send.selectVectorDistrInputBinding", function(event) {
     event.stopImmediatePropagation();
@@ -215,7 +349,11 @@ $.extend(selectVectorDistrInputBinding, {
     var self = this;
     if (!self.distributions.hasOwnProperty(id))
       self.distributions[id] = new Array();
-      
+    if (data.hasOwnProperty('numNodes')) {
+        console.log("Prev: " + self.numNodes[id] + " New: " + data.numNodes);
+        self._generateNodeSelects(el, self.numNodes[id], data.numNodes);
+        self.numNodes[id] = data.numNodes;
+    }  
   	if (data.hasOwnProperty('distributions')) {
       //Se guarda una copia de la distribuciones base para copiarlas en caso de ser necesario
       self.distributions[id].masterdistributions = data.distributions;
@@ -246,17 +384,17 @@ $.extend(selectVectorDistrInputBinding, {
 	initialize: function(el) {
     var id = $(el).attr("id");
     this.distributions = new Array();
+    this.numNodes = new Array();
     
-    var numNodes = 2;
     var defval = $(el).attr("defaultvalue");
     if (defval != null) {
       defval = eval("(" + defval + ")");
-      numNodes = defval.length;
+      this.numNodes[id] = defval.length;
     }
       
     $(el).append("<button id='"+ id +"-manualInput' class='btn btn-info'>Edit/View</button>" +
                   "<div id='"+ id + "-div'>" +
-                    "<label for='" + id + "-numNodes' style='display:inline-block; margin-right: 10px;'>Number of nodes: </label><input id='"+ id +"-numNodes' type=number value="+ numNodes +" prev-value="+ numNodes + "><hr><span></span>" + 
+                    "<span></span>" + 
                   "</div>")
     $("#"+id+"-div").dialog({
   	    autoOpen: false,
@@ -279,34 +417,58 @@ $.extend(selectVectorDistrInputBinding, {
     $("#" + id + "-manualInput").button().click(function() {
   		$("#" + id + "-div").dialog("open");
 		});
+    if (this.numNodes[id] > 0) 
+      this._generateNodeSelects(el, 0, this.numNodes[id])
     
-   this._generateNodeSelects(el, 0, $("#"+ id + "-numNodes").val());
   },
   _generateNodeSelects: function(el, prevval, newval) {
       var id = $(el).attr("id");
       var self = this;
       var distrzone = $("#"+ id + "-div").find("span");
       if (prevval == 0 || newval > prevval) {
-        //Shiny.unbindAll();
+        //Shiny.unbindAll(distrzone);
         for (i=(prevval+1); i<=newval; i++) {
           distrzone.append("<label for='"+ id + "-select-"+i+"'><u><b>Node "+ i +":</b></u></label><select id='" + id + "-select-"+i+"' style='display:block; margin-top:15px;'></select>").append("<div id='" + id + "-distrInputs-" + i +"' style='display:inline; height:20px; width:auto;'></div>");
           //Si hay cargada una lista de distribuciones (maestra, cargamos las <option> en el nuevo <select>
           if ((self.distributions[id] != undefined) && (self.distributions[id].hasOwnProperty("masterdistributions"))) {
-            if (self.distributions[id][i-1] == undefined)
+            if (self.distributions[id][i-1] == undefined){
               self.distributions[id][i-1] = $.extend(true, {}, self.distributions[id].masterdistributions);
+            }
             for(j=0; j<self.distributions[id].masterdistributions.length; j++) {
               $("#"+id+"-select-"+i).append("<option value="+j+">"+ self.distributions[id][i-1][j].name + "</option>");
             }
           }
         }
         Shiny.bindAll(distrzone);
-      } else if (prevval > newval) {
+        $("* [id^='"+id+"-select-']").each(function(index) {
+          $(this).on("change",{id:id, self:self, index:index},  self._selectChange);
+        });
+    } else if (prevval > newval) {
         for (i=prevval; i>newval; i--) {
           $("#"+id+"-select-"+i).remove();
           $("#"+id+"-distrInputs-"+i).remove();
+          $("label[for='" + id + "-select-"+ i +"']").remove();
         }
       }
-  }
+  },
+  _selectChange: function(event) {
+        console.log(event.data.id);
+        var id = event.data.id;
+        var self = event.data.self;
+        var index = event.data.index;
+        
+  	    event.stopImmediatePropagation();
+        var paramDiv = $("#"+ id +"-distrInputs-" + (index+1));
+        paramDiv.empty();
+		    var selected = $(this).val();
+		    var parameters = self.distributions[id][index][selected].params;
+	  	  for(var i=0; i<parameters.length; i++) {
+			    paramDiv.append("<label>"+parameters[i].name+ ": </label><input id='"+ id + "-distrInput-"+ (index+1) + "-" + parameters[i].name+ "' name='"+ parameters[i].name + "' value='"+ parameters[i].value +"' style='width:4.5em;' type='number'/><br><br>");
+			    $("#"+id+"-distrInput-"+ (index+1)+"-"+parameters[i].name).on("change", {posparam:i, posselect:index}, function(event) {
+            self.distributions[id][event.data.posselect][selected].params[event.data.posparam].value = $(this).val();
+		      	});
+		    }
+	 }
 });
 Shiny.inputBindings.register(selectVectorDistrInputBinding, 'shiny.selectVectorDistrInput');
 
@@ -452,30 +614,9 @@ $.extend(matrixInputBinding, {
 		var id = $(el).attr("id");
 		var self = this;
 		$("#" + id + "-numNodes").on("change", function(event) {
-			event.stopImmediatePropagation();
-			var prevn = parseInt($(this).attr("prev-value"));
-			var n = $(this).val();
-			if (n < 11 && n > 0) {
-				if (prevn < n) {
-					self._expandTable(id, prevn,  n-prevn);
-					var neww = $("#" + id + "-manualDialog").dialog("option", "width") + 80*(n-prevn);
-					var newh = $("#" + id + "-manualDialog").dialog("option", "height") + 25*(n-prevn)
-					if (neww > 1200) neww = 1200;
-					if (newh > 520) newh = 520;
-					
-					$("#" + id + "-manualDialog").dialog("option", "width", neww);
-					$("#" + id + "-manualDialog").dialog("option", "height", newh);
-				} else {
-					self._reduceTable(id, prevn, prevn-n);
-					var neww = $("#" + id + "-manualDialog").dialog("option", "width") - 80*(prevn-n);
-					var newh = $("#" + id + "-manualDialog").dialog("option", "height") - 25*(prevn-n);
-					
-					$("#" + id + "-manualDialog").dialog("option", "width", neww);
-					$("#" + id + "-manualDialog").dialog("option", "height", newh);
-				}
-				$(this).attr("prev-value", $(this).val()); 	
-			}
-			$(this).val($(this).attr("prev-value"));
+        var prevn = parseInt($(this).attr("prev-value"));
+		  	var n = $(this).val();
+  	    self._changeNodes(id, self, prevn, n);
 		});
 		
 		$(el).on("send.matrixInputBinding", function(event) {
@@ -483,52 +624,62 @@ $.extend(matrixInputBinding, {
 		});
 	},
 	receiveMessage: function(el, data) {
-		  var id = $(el).attr("id");	
+		  var id = $(el).attr("id");
+      if (data.hasOwnProperty('numNodes')) {
+        this._changeNodes(id, this, this.nodes[id], data.numNodes);
+				this.nodes[id] = data.numNodes;
+	    }
 		  if (data.hasOwnProperty('value') && data.hasOwnProperty('size')) {
-			$("#"+id+"-numNodes").val(data.size).trigger("change");
+  			this._changeNodes(id, this, this.nodes[id], data.size);
+    		this.nodes[id] = data.size;
 			for(var i=0; i<data.size; i++)
 				for(var j=0; j<data.size; j++) {
-					$("#"+id+"-table-"+(i+1)+"-"+(j+1)+"-input").val(data.value[i+1][j]).trigger("change");
+          console.log($("#"+id+"-table-"+(i+1)+"-"+(j+1)+"-input"));
+					$("#"+id+"-table-"+(i+1)+"-"+(j+1)+"-input").attr("value", data.value[i+1][j]).trigger("change");
 				}
-			$(el).trigger("send.matrixInputBinding");
 		  }
+      $(el).trigger("send.matrixInputBinding");
 	},
 	initialize: function(el) {	
 		if(!this.hasOwnProperty("matrix"))
 			this.matrix = new Array();	
-			
+	
 		var id = $(el).attr("id");		
 		$(el).append("<button id='"+ id +"-manualInput' class='btn btn-info'>Edit/View</button>" +
 					  "<div id='"+ id +"-manualDialog' style='maxHeight:520; maxWidth:1200'>" +
 							"<label for='" + id + "-numNodes'>Number of nodes: </label><input id='"+ id +"-numNodes' type=number value=5 prev-value=5 min=1 max=10/><br><br>" +
 							"<center><table id='" + id + "-table'></table></center>" +
 					  "</div>");
-		 var nodes;
+    if($(el).data("withoutnodes")) {
+      $("label[for='" + id + "-numNodes']").first().css("display", "none");
+      $("#"+id+"-numNodes").css("display", "none");
+    }
+    this.nodes = new Array()
 		if ($(el).attr("ini-value") != null) {
 			inivalue = $(el).attr("ini-value").split("],[");
-			nodes = inivalue.length;
-			this.matrix[id] = new Array(nodes);
+			this.nodes[id] = inivalue.length;
+			this.matrix[id] = new Array(this.nodes[id]);
 			for(i=0; i<inivalue.length; i++) {
 				rowvalues = inivalue[i].replace("[", "").replace("]","").split(",");
-				this.matrix[id][i] = new Array(nodes);
+				this.matrix[id][i] = new Array(this.nodes[id]);
 				for(j=0; j<rowvalues.length; j++)
 					this.matrix[id][i][j] = parseFloat(rowvalues[j]);
 			}
-			$("#" + id + "-numNodes").val(nodes).attr("prev-value", nodes);
+			$("#" + id + "-numNodes").val(this.nodes[id]).attr("prev-value", this.nodes[id]);
 		}
 		else{
-			nodes = parseInt($("#" + id + "-numNodes").val());
+		 this.nodes[id] = parseInt($("#" + id + "-numNodes").val());
 			if (!this.matrix.hasOwnProperty(id)) {
-				this.matrix[id] = new Array(nodes);
-				for (var i=0; i<nodes; i++) {
-					this.matrix[id][i] = new Array(nodes);
-					for (var j=0; j<nodes; j++) {
+				this.matrix[id] = new Array(this.nodes[id]);
+				for (var i=0; i<this.nodes[id]; i++) {
+					this.matrix[id][i] = new Array(this.nodes[id]);
+					for (var j=0; j<this.nodes[id]; j++) {
 						this.matrix[id][i][j] = 0;
 					}
 				}	
 			}
 		}
-		this._expandTable(id, 0 , nodes);
+		this._expandTable(id, 0 , this.nodes[id]);
 		var self = this;
 		$("#" + id + "-manualDialog").dialog({
 		    autoOpen: false,
@@ -567,6 +718,30 @@ $.extend(matrixInputBinding, {
 			$("#" + id + "-manualDialog").dialog("open");
 		});
 	},
+  _changeNodes: function(id, self, prevn, n) {      
+  		event.stopImmediatePropagation();
+			if (n < 11 && n > 0) {
+				if (prevn < n) {
+					self._expandTable(id, prevn,  n-prevn);
+					var neww = $("#" + id + "-manualDialog").dialog("option", "width") + 80*(n-prevn);
+					var newh = $("#" + id + "-manualDialog").dialog("option", "height") + 25*(n-prevn)
+					if (neww > 1200) neww = 1200;
+					if (newh > 520) newh = 520;
+					
+					$("#" + id + "-manualDialog").dialog("option", "width", neww);
+					$("#" + id + "-manualDialog").dialog("option", "height", newh);
+				} else {
+					self._reduceTable(id, prevn, prevn-n);
+					var neww = $("#" + id + "-manualDialog").dialog("option", "width") - 80*(prevn-n);
+					var newh = $("#" + id + "-manualDialog").dialog("option", "height") - 25*(prevn-n);
+					
+					$("#" + id + "-manualDialog").dialog("option", "width", neww);
+					$("#" + id + "-manualDialog").dialog("option", "height", newh);
+				}
+				$("#" + id + "-numNodes").attr("prev-value", $("#" + id + "-numNodes").val()); 	
+			}
+			$("#" + id + "-numNodes").val($("#" + id + "-numNodes").attr("prev-value"));
+		},
 	_expandTable: function(id, prevn, n) {
 		//Expandimos la cabecera
 		var header = rows = "";
@@ -715,13 +890,13 @@ var mydatatableOutputBinding = new Shiny.OutputBinding();
                     header + footer + '</table>';
       $el.append(content);
       var oTable = $(el).children("table").dataTable($.extend({
-        "bProcessing": true,
-        "bServerSide": true,
-        "aaSorting": [],
-        "bSortClasses": false,
-        "iDisplayLength": 25,
-        "sAjaxSource": data.action,
-        "fnInitComplete": function() {
+        "processing": true,
+        "serverSide": true,
+        "order": [],
+        "orderClasses": false,
+        "pageLength": 25,
+        "ajax": data.action,
+        "initComplete": function() {
                              if (data.options.hasOwnProperty("rowHeaders") && data.options.rowHeaders) {
                                $(el).find("table tbody").find("tr").each(function(){
                                     var td = $(this).find("td").first();
@@ -732,20 +907,97 @@ var mydatatableOutputBinding = new Shiny.OutputBinding();
                              Shiny.bindAll($(el));
                           }
         }, data.options));
-      // use debouncing for searching boxes
-      $el.find('label input').first().unbind('keyup')
-           .keyup(debounce(data.searchDelay, function() {
-              oTable.fnFilter(this.value);
-            }));
-      var searchInputs = $el.find("tfoot input");
-      searchInputs.keyup(debounce(data.searchDelay, function() {
-        oTable.fnFilter(this.value, searchInputs.index(this));
-      }));
+      
       // FIXME: ugly scrollbars in tab panels b/c Bootstrap uses 'visible: auto'
       $el.parents('.tab-content').css('overflow', 'visible');
     }
   });
 Shiny.outputBindings.register(mydatatableOutputBinding, 'shiny.mydatatableOutput');
+
+var reportBodyOutputBinding = new Shiny.OutputBinding();
+
+$.extend(reportBodyOutputBinding, {
+    find: function(scope) {
+      return $(scope).find('.shiny-reportbody-output');
+    },
+    onValueError: function(el, err) {
+      //Shiny.unbindAll(el);
+      this.renderError(el, err);
+    },
+    renderError : function(el, err) {
+      $(el).empty();
+      $(el).append("<p class='shiny-output-error'>"+err.message+"</p>");
+    },
+    renderValue: function(el, data) {
+      var id = $(el).attr("id");
+      var body = "";
+      for (i in SessionReports.reports) 
+        body += SessionReports.reports[i].body;
+      
+      $(el).empty().append("<div>"+body+"</div>");
+      var dataURI = 'data:text/html,' + encodeURIComponent("<div>"+body+"</div>");
+      $("#printAllOutput" + data.numTab).attr("href", dataURI).attr("download", "ArqasReport");
+    }
+  });
+Shiny.outputBindings.register(reportBodyOutputBinding, 'shiny.reportBodyOutputBinding');
+
+var reportMenuOutputBinding = new Shiny.OutputBinding();
+
+$.extend(reportMenuOutputBinding, {
+    find: function(scope) {
+      return $(scope).find('.shiny-reportmenu-output');
+    },
+    onValueError: function(el, err) {
+      //Shiny.unbindAll(el);
+      this.renderError(el, err);
+    },
+    renderError : function(el, err) {
+      $(el).empty();
+      $(el).append("<p class='shiny-output-error'>"+err.message+"</p>");
+    },
+    renderValue: function(el, data) {
+      console.log("Llamada");
+      var id = $(el).attr("id");
+      var menu = "";
+      for (i in SessionReports.reports) 
+        menu += SessionReports.reports[i].menu;
+
+      $(el).empty().append("<div><ul>"+menu+"</ul></div>");
+      $(el).find("a").each(function(){
+          
+          var aId = new String($(this).attr("id"));
+          if (aId.endsWith("hide")){
+            $(this).click(function(){
+                var target = $(this).attr("mytarget");
+                $("#" + target).toggle();
+                var dataURI = 'data:text/html,' + encodeURIComponent($("#ModelOutputBox"+data.numTab).html());
+                $("#printAllOutput" + data.numTab).attr("href", dataURI).attr("download", "ArqasReport");
+                $(this).next().toggle();
+                if ($(this).html() == "[Hide]")
+                  $(this).html("[Show]").prev().css('text-decoration', 'line-through');
+                else
+                  $(this).html("[Hide]").prev().css('text-decoration', '');
+              });
+          } else if (aId.endsWith("print")) {
+              $(this).click(function(){
+                  var target = $(this).attr("mytarget");
+                  var html = $("#ModelOutputBox" + data.numTab).find("#"+ target).html();
+                  var dataURI = 'data:text/html,' + encodeURIComponent(html); 
+
+                  $(this).attr("href", dataURI);
+                  $(this).attr("download", $(this).prev().prev().text());
+              });
+          } else {
+            $(this).click(function(){
+                var target = $(this).attr("name");
+                $("#ModelOutputBox" + data.numTab).scrollTo($("#ModelOutputBox" + data.numTab).find("a[name='"+target+"']").first());
+            });
+          }
+      });
+    }
+  });
+Shiny.outputBindings.register(reportMenuOutputBinding, 'shiny.reportMenuOutputBinding');
+
 
 var networkOutputBinding = new Shiny.OutputBinding();
 $.extend(networkOutputBinding, {
@@ -1387,7 +1639,11 @@ Shiny.inputBindings.register(graphInputBinding, 'shiny.graphInputBinding');*/
 			var writeMenu = function(data) {
 				var aux = "";
 				for(var i=0; i<data.length; i++) {
-					aux += "<li><a idMenu='"+ data[i].id +"' href='#'>" + data[i].title + "</a>\n"
+          if (data[i].behavior != undefined && data[i].behavior.type == "link") {
+            aux += "<li><a href='" + data[i].behavior.link + "' target='_blank'>" + data[i].title + "</a>\n";
+          }
+          else
+            aux += "<li><a idMenu='"+ data[i].id +"' href='#'>" + data[i].title + "</a>\n";
 					if (data[i].submenu.length > 0)
 						aux += "<ul>" + writeMenu(data[i].submenu) + "</ul>\n";
 					aux += "</li>";
@@ -1447,7 +1703,7 @@ Shiny.inputBindings.register(graphInputBinding, 'shiny.graphInputBinding');*/
 				var submenu = this._buildMenu(data[i].submenu);
 			else
 				var submenu = new Array();
-			menu.push({title: title, submenu: submenu, id: data[i].id});
+			menu.push({title: title, submenu: submenu, id: data[i].id, behavior: data[i].behavior});
 		}
 		return menu;
  	}

@@ -162,8 +162,8 @@ selectDistr <- function(WithNoArrivals=TRUE) {
   aux  <- function(n, v) {list(name=n, value=eval(parse(text=paste(v, sep=""))))}
   choicelist <- list()
   cond <-  ifelse(WithNoArrivals, 0, 1)
-  for(i in 1:(length(distrList)-cond)) {
-     choicelist[[i]] <- list(name=distrList[[i]]$name, params=mapply(aux, as.list(names(formals(distrList[[i]]$fun))), formals(distrList[[i]]$fun), SIMPLIFY=FALSE))
+  for(i in 1:(length(distrList$get())-cond)) {
+     choicelist[[i]] <- list(name=distrList$get()[[i]]$name, params=mapply(aux, as.list(names(formals(distrList$get()[[i]]$fun))), formals(distrList$get()[[i]]$fun), SIMPLIFY=FALSE))
   }
   return(choicelist)
 }
@@ -198,7 +198,7 @@ distrDefaultValues <- function(distrModel) {
    parameters <- param(distrModel)
    paramNames <- slotNames(parameters)
 
-   res <- paste("{id:", distrList[[class(distrModel)[1]]]$id, ", params:[", sep="")
+   res <- paste("{id:", distrList$get()[[class(distrModel)[1]]]$id, ", params:[", sep="")
    for(i in 1:(length(paramNames)-1)) {
     res <- paste(res, "{name:'", paramNames[i], "' , value:", slot(parameters, paramNames[i]), "}", sep="")
     if (i != length(paramNames)-1)
@@ -229,14 +229,17 @@ generateInputs.default <- function(input, model, parameters) {
     args <- parameters
   else
     args <- formals(model$fun)
-  
+  mclass <- class(model)
   argsnames <- names(args)
   inputs <- "<form class='pure-form-stacked arqas-form'><fieldset>"
+  if (any(mclass == "SimulatedNetwork" | mclass == "Network")) {
+    inputs <- paste(inputs, "<label for='numNodes", input$results$total, "'>Number of nodes:</label>\n<input id='numNodes", input$results$total ,"' type='number' min=1 value=", length(eval(args[[1]])), " />\n", sep="")
+  }
   for(i in 1:length(model$args)) {
     label <- ifelse(is.null(l <- model$args[[i]]$label), argsnames[i], l)
     switch(model$args[[i]]$type,
         "numeric" = inputs <- paste(inputs, "<label for='", argsnames[i], input$results$total , "'>", simpleCap(label),":</label>\n<input id='", argsnames[i], input$results$total , "' type='number' min=0 value=", eval(args[[i]]) ," />\n", sep=""),
-        "matrix" = inputs <- paste(inputs, "<label for='", argsnames[i], input$results$total, "'>", simpleCap(label),":</label><span id='", argsnames[i], input$results$total, "' ini-value='", matrixtostring(eval(args[[i]])) ,"' class='shiny-matrix-input'/><br>", sep=""),
+        "matrix" = inputs <- paste(inputs, "<label for='", argsnames[i], input$results$total, "'>", simpleCap(label),":</label><span id='", argsnames[i], input$results$total, "' ini-value='", matrixtostring(eval(args[[i]])) ,"' class='shiny-matrix-input' ", if(any(mclass=="SimulatedNetwork" | mclass=="Network")) {"data-withoutnodes=true"} ," /><br>", sep=""),
         "vector" = inputs <- paste(inputs, "<label for='", argsnames[i], input$results$total, "'>", simpleCap(label), ":</label><input id='", argsnames[i], input$results$total, "' value='", vectortostring(eval(args[[i]])),"' class='shiny-vector-input'  /><br>", sep=""),
         "boolean" = inputs <- paste(inputs, "<label for='", argsnames[i], input$results$total, "'></label><input id='", argsnames[i], input$results$total, "' type='checkbox' ", ifelse(eval(args[[i]]), "checked", ""), ">  ", simpleCap(argsnames[i]), "</input><br>", sep=""),
         "distr" = inputs <- paste(inputs, "<label for='", argsnames[i], input$results$total, "'>", simpleCap(label), ":</label><div id='", argsnames[i], input$results$total, "' class='shiny-distr-input' defaultvalue=\"", distrDefaultValues(eval(args[[i]])), "\"></div><br>", sep=""),
@@ -244,12 +247,11 @@ generateInputs.default <- function(input, model, parameters) {
     )       
   }
   inputs <- paste(inputs, "<br></fieldset>", sep="")
-  if(any(class(model) == "Network")) {
+  if(any(mclass == "Network")) {
     #inputs <- paste(inputs, tagList(tags$label("for"=paste("fileInput", input$results$total, sep=""), "File"), tags$input(id=paste("fileInput", input$results$total, sep=""), type="file", multiple=FALSE, title=" "), tags$br(), tags$br()), sep="")
     inputs <- paste(inputs, tagList(tags$input(id=paste("fileInput", input$results$total, sep=""), type="file", multiple=FALSE, title=" ", style="display:none;"),
                                      tags$input(id=paste("fileInput", input$results$total, "button", sep=""), type="button", class="btn btn-info", value="Upload data file", onclick=paste("document.getElementById('fileInput",input$results$total,"').click();", sep="")), tags$br(), tags$br()))
   }
-  mclass <- class(model)
   if(any(mclass == "SimulatedModel") || any(mclass == "Network")) {
     inputs <- paste(inputs, "<button id='compute", input$results$total, "' class='btn btn-primary shiny-jquerybutton-input' once>Compute</button>", sep="")
   }
@@ -324,6 +326,16 @@ updateMatrixInput <- function(session, inputId, value=NULL, size=NULL) {
   session$sendInputMessage(inputId, message)
 }
 
+#' Sends a message to the HTML Shiny Matrix Input to update the number of nodes
+#' @param session Session in the server
+#' @param inputId Id of the input to update
+#' @param numNodes Number of tnodes
+updateNodesMatrixInput <- function(session, inputId, numNodes=NULL) {
+  message <- list(numNodes=numNodes)
+  session$sendInputMessage(inputId, message)
+}
+
+
 #' Sends a message to the HTML Shiny JQueryUISlider Input to update its fields
 #' @param session Session in the server
 #' @param inputId Id of the input to update
@@ -354,6 +366,15 @@ updateVectorSelectDistrInput <- function(session, inputId, distributions=NULL) {
   session$sendInputMessage(inputId, message)
 }
 
+#' Sends a message to the HTML Shiny VectorSelectDistr Input increase the number of nodes
+#' @param session Session in the server
+#' @param inputId Id of the input to update
+#' @param nodes The new number of nodes
+updateNodesVectorSelectDistrInput <- function(session, inputId, numNodes=NULL) {
+  message <- list(numNodes=numNodes)
+  session$sendInputMessage(inputId, message)
+}
+
 updateCheckboxDistrInput <- function(session, inputId, distributions=NULL) {
   message <- list(distributions=distributions)
   session$sendInputMessage(inputId, message)
@@ -361,6 +382,11 @@ updateCheckboxDistrInput <- function(session, inputId, distributions=NULL) {
 
 updateButtonInput <- function(session, inputId, disabled=NULL) {
   message <- list(disabled=disabled)
+  session$sendInputMessage(inputId, message)
+}
+
+updateSaveReportInput <- function(session, inputId, action=NULL, sections=NULL, html=NULL, disabled=FALSE) {
+  message <- list(action=action, sections=sections, html=html, disabled=disabled)
   session$sendInputMessage(inputId, message)
 }
 
@@ -408,6 +434,8 @@ generateToolbox.MarkovianModel <- function(input, model) {
                     "</div>",
                    "<div id='WtWqtSlider", input$results$total, "' class='shiny-slider-input' range='true' min=0 max=2 step=0.05 values='[0, 0.5]'></div><br>",
                    "<button id='CalculateButton", input$results$total, "' type='button' class='btn btn-primary shiny-jquerybutton-input'>Compute</button>",
+                   "<hr><br>",
+                   "<div id='saveReport", input$results$total, "' class='shiny-savereport-input'></div>",
                "</fieldset></form>", sep=""))
 }
 
@@ -423,6 +451,8 @@ generateToolbox.Network <- function(input, model) {
                "<label for='PnSlider", input$results$total, "'><b> Pn</b><br><br> n from <input type='number' class='arqas-number-input'value='0' min='0' id='PnMin", input$results$total, "'></input> to <input type='number' class='arqas-number-input' value='5' min='0' id='PnMax", input$results$total,"'></input>:</label><br>",
                "<div id='PnSlider", input$results$total, "' class='shiny-slider-input' range='true' min=0 max=", maxSliderPn ," step=1 values='[0, 5]'></div><br>",
                "<button id='CalculateButton", input$results$total, "' type='button' class='btn btn-primary shiny-jquerybutton-input'>Compute</button><br>",
+               "<hr><br>",
+               "<div id='saveReport", input$results$total, "' class='shiny-savereport-input'></div>",
                sep="")
   return(res)
 }
@@ -435,7 +465,9 @@ generateToolbox.OpenJackson <- function(input, model) {
   defaultModel <- model$fun()
   return(tagList(selectInput(inputId=paste("nodeSelector", input$results$total, sep=""), label=tags$b("Show node:"), choices=c("-----", as.character(1:length(defaultModel$servers))), multiple=FALSE), tags$br(), 
                  tags$label("for"=paste("pn1nk", input$results$total, sep=""), paste("Pn<sub>1</sub>...n<sub>", length(defaultModel$servers), "</sub>:",  sep="")), 
-                 tags$input(id=paste("pn1nk", input$results$total, sep=""), value=vectortostring(1:length(defaultModel$servers)) ,class="shiny-vector-input")
+                 tags$input(id=paste("pn1nk", input$results$total, sep=""), value=vectortostring(1:length(defaultModel$servers)) ,class="shiny-vector-input"),
+                 tags$hr(), tags$br(),
+                 tags$div(id=paste("saveReport", input$results$total, sep=""), class='shiny-savereport-input')
   ))
 }
 
@@ -447,7 +479,10 @@ generateToolbox.SimulatedModel <- function(input, model) {
   return(tagList(tags$label("for"=paste("depth", input$results$total, sep=""), "Number of points (depth): "), 
                  tags$input(id=paste("depth", input$results$total, sep=""), value=100, class="shiny-numeric-input", type="number"),
                  tags$br(), tags$br(),
-                 tags$button(id=paste("CalculateButton", input$results$total, sep=""), class="btn btn-primary shiny-jquerybutton-input", "Compute")))
+                 tags$button(id=paste("CalculateButton", input$results$total, sep=""), class="btn btn-primary shiny-jquerybutton-input", "Compute"),
+                 tags$hr(), tags$br(),
+                 tags$div(id=paste("saveReport", input$results$total, sep=""), class='shiny-savereport-input')
+         ))
 }
 
 generateToolbox.DataAnalysis <- function(input, model) {
@@ -520,11 +555,34 @@ generatePanel.DataAnalysis <- function(session, input, model, parameters) {
   )
 }
 
+generatePanel.Report <- function(session, input, model, parameters) {
+  list(
+    paste("<div class='container-fluid'>",
+          "<div id='RowToolsBox' class='row-fluid'>",
+          "<div class='col-md-3'>",
+          "<div class='InputToolsBox'>",
+          "<div class='InputDataBox ui-widget-content ui-corner-all' alone>",
+          "<center><button id='refresh", input$results$total, "' class='btn btn-primary shiny-jquerybutton-input'>Refresh</button><a id='printAllOutput", input$results$total, "' class='shiny-printall-output'><button id='printAll", input$results$total, "' class='btn btn-primary shiny-jquerybutton-input'>Print All</button></a></center><hr><br>",
+          "<span id='reportMenuOutput", input$results$total, "' class='shiny-reportmenu-output'></span>",
+          "</div>",
+          "</div>",
+          "</div>",
+          "<div class='col-md-9 main'>",
+          "<div id='ModelOutputBox", input$results$total, "' class='ModelOutputBox ui-widget-content ui-corner-all' style='overflow:scroll;'>",
+          "<span id='reportBodyOutput", input$results$total, "' class='shiny-reportbody-output'></span>",
+          "</div>",
+          "</div>",
+          "</div>",
+          "</div>",
+          sep="")
+  )
+}
+
 #' Generates a Distr object from the distrList.
 #' @param distrInput The selected distribution
 generateSimpleDistr <- function(distrInput) {
-  lastid <- length(distrList)
-  name <- distrList[[distrInput$distribution]]$name
+  lastid <- length(distrList$get())
+  name <- distrList$get()[[distrInput$distribution]]$name
   if (distrInput$distribution == lastid)
     stop(simpleError("You must select a Distribution."))
   res <- "("
@@ -536,8 +594,7 @@ generateSimpleDistr <- function(distrInput) {
     else
       res <- paste(res, ", ", sep="")
   }
-  print(res)
-  return(paste("distrList[[", distrInput$distribution, "]]$fun", res, sep=""))
+  return(paste("distrList$get()[[", distrInput$distribution, "]]$fun", res, sep=""))
 }
 
 generateDistr <- function(distrInput) {
@@ -601,8 +658,409 @@ datatableWtWqt <- function(model, rangeWtWqt, step) {
   ranges <- seq(rangeWtWqt[[1]], rangeWtWqt[[2]], by=step)
   wts <-  FW(model, ranges)
   wqs <- FWq(model, ranges)
-  wqs <- ifelse(is.na(wqs) || is.infinite(wqs), 0, wqs)
+  wqs <- ifelse(is.na(wqs) | is.infinite(wqs), 0, wqs)
   return(data.frame("t"=ranges, "W"=wts, "Wq"= wqs))
+}
+
+HTMLModelBasicData <- function(qm) {UseMethod("HTMLModelBasicData", qm)}
+
+HTMLModelBasicData.MarkovianModel <- function(qm) {
+  fancyName <- function(t) {
+    return(switch(t, "arrivalDistribution"="Arrival Distribution", 
+                     "serviceDistribution"="Service Distribution",
+                     "servers"="Servers",
+                      "h"="H", "k"="K", "y"="Y", t))
+  }
+  numElem <- length(qm)-1
+  nameElem <- names(qm)[1:numElem]
+  res <- paste("<center><table border=1 style='border-collapse:collapse;table-layout: fixed;text-align:center;width:auto;'><tr><td colspan=", numElem, ">", gsub(pattern = "_", replacement = "/", x = class(qm)[1]), "</td></tr>", collapse="")
+  
+  res <- paste(res, "<tr>", collapse="")
+  for(i in nameElem) 
+    res <- paste(res, "<td><b>", fancyName(i), "</b></td>", collapse="")
+  res <- paste(res, "</tr><tr>", collapse="")
+  for(j in 1:numElem)
+    res <- paste(res, "<td>", if (!is.null(attribute <- attr(class(qm[[j]]), "package")) && attribute == "distr") distrToText(qm[[j]]) else qm[[j]], "</td>", collapse="")
+  
+  res <- paste(res, "</tr></table></center>", collapse="")
+
+  return(res)
+}
+
+HTMLModelBasicData.ClosedJackson <- function(qm) {
+  res <- paste("<center><table border=1 style='border-collapse:collapse;table-layout: fixed;text-align:center;width:auto;'><tr><td colspan=5>", class(qm)[1], "</td></tr>", collapse="")
+  res <- paste(res, "<tr><td><b>Node</b></td><td><b>Arrival Distribution</b></td><td><b>Service Distribution</b></td><td><b>Servers</b></td><td><b>Number of customers</b></td></tr>", collapse="")
+  for (i in 1:(qm$k)) {
+    res <- paste(res, "<tr><td>", i, "</td>", "<td>Exp(", round(qm$lambda[i], 6), ")</td>", "<td>Exp(", qm$mu[i], ")</td>", "<td>", qm$servers[i], "</td>", collapse="")
+    if (i == 1)
+      res <- paste(res, "<td>", qm$n, "</td></tr>", collapse="")
+    else
+      res <- paste(res, "</tr>", collapse="")
+  }
+  res <- paste(res, "</table></center>", collapse="")
+  return(res)
+}
+
+HTMLModelBasicData.Network <- function(qm) {
+  fancyName <- function(t) {
+    return(switch(t, "arrivalDistribution"="Arrival Distribution", 
+                  "serviceDistribution"="Service Distribution",
+                  "servers"="Servers",
+                  t))
+  }
+  numElem <- length(qm$nodes[[1]])
+  nameElem <- names(qm$nodes[[1]])
+  res <- paste("<center><table border=1 style='border-collapse:collapse;table-layout: fixed;text-align:center;width:auto;'><tr><td colspan=", numElem, ">", class(qm)[1], "</td></tr>", collapse="")
+  
+  res <- paste(res, "<tr><td><b>Node</b></td>", collapse="")
+  for (i in nameElem[-length(nameElem)]) 
+    res <- paste(res, "<td><b>", fancyName(i), "</b></td>", collapse="")
+  
+  res <- paste(res, "</tr>", collapse="")
+  for (i in 1:length(qm$nodes)) {
+    res <- paste(res, "<tr><td>", i, "</td>", collapse="")
+    for(j in 1:(length(nameElem)-1))
+      res <- paste(res, "<td>", if (!is.null(attribute <- attr(class(qm$nodes[[i]][[j]]), "package")) && attribute == "distr") distrToText(qm$nodes[[i]][[j]]) else qm$nodes[[i]][[j]], "</td>", collapse="")  
+    res <- paste(res, "</tr>")
+  }
+  res <- paste(res, "</table></center>", collapse="") 
+  return(res)  
+}
+
+HTMLModelBasicData.SimulatedModel <- function(qm) {
+  fancyName <- function(t) {
+    return(switch(t, "arrivalDistribution"="Arrival Distribution", 
+                  "serviceDistribution"="Service Distribution",
+                  "s"="Servers",
+                  "staclients"="Num. Customers for Stabilitation",
+                  "nclients"="Num. Customers for Simulation",
+                   "h"="Potencial Costumers",
+                  "y"="Replacements",
+                  "k"="Queue Size",
+                  t))
+  }
+  numElem <- length(qm)-1
+  nameElem <- names(qm)[1:numElem]
+  res <- paste("<center><table border=1 style='border-collapse:collapse;table-layout: fixed;text-align:center;width:auto;'><tr><td colspan=", numElem, ">", gsub(pattern = "_", replacement = "/", x = class(qm)[1]), "</td></tr>", collapse="")
+  
+  res <- paste(res, "<tr>", collapse="")
+  for(i in nameElem) 
+    res <- paste(res, "<td><b>", fancyName(i), "</b></td>", collapse="")
+  res <- paste(res, "</tr><tr>", collapse="")
+  for(j in 1:numElem)
+    res <- paste(res, "<td>", if (!is.null(attribute <- attr(class(qm[[j]]), "package")) && attribute == "distr") distrToText(qm[[j]]) else qm[[j]], "</td>", collapse="")
+  
+  res <- paste(res, "</tr></table></center>", collapse="")
+  return(res)
+}
+
+HTMLModelBasicData.Open <- function(qm) {
+  fancyName <- function(t) {
+    return(switch(t, "arrivalDistribution"="Arrival Distribution", 
+                  "serviceDistribution"="Service Distribution",
+                  "s"="Servers",
+                  "staclients"="Num. Customers for Stabilitation",
+                  "transitions" = "Transitions",
+                  t))
+  }
+  qmAux <- qm[-4]
+  numElem <- length(qmAux)-1
+  nameElem <- names(qmAux)[1:numElem]
+  res <- paste("<center><table border=1 style='border-collapse:collapse;table-layout: fixed;text-align:center;width:auto;'><tr><td colspan=", numElem+1, ">", class(qm)[1], "</td></tr>", collapse="")
+  
+  res <- paste(res, "<tr><td><b>Node</b></td>", collapse="")
+  for(i in nameElem) 
+    res <- paste(res, "<td><b>", fancyName(i), "</b></td>", collapse="")
+  res <- paste(res, "</tr>", collapse="")
+  for (i in 1:length(qm$s)) {
+    res <- paste(res, "<tr><td>", i, "</td><td>",
+                                  distrToText(qm$arrivalDistribution[[i]]), "</td><td>",
+                                  distrToText(qm$serviceDistribution[[i]]), "</td><td>",
+                                  qm$s[i], "</td>", sep="")
+    if (i == 1)
+      res <- paste(res, "<td>", qm$staclients, "</td><td>", qm$transitions, "</td>", sep="")
+    res <- paste(res, "</tr>", sep="")
+  }
+  res <- paste(res, "</tr></table></center>", collapse="")
+  return(res)
+  
+}
+
+HTMLModelBasicData.Closed <- function(qm) {
+  fancyName <- function(t) {
+    return(switch(t,
+                  "serviceDistribution"="Service Distribution",
+                  "s"="Servers",
+                  "staclients"="Num. Customers for Stabilitation",
+                  "transitions" = "Transitions",
+                  "nclients" = "Num. of Customers in the network",
+                  t))
+  }
+  qmAux <- qm[-3]
+  numElem <- length(qmAux)-1
+  nameElem <- names(qmAux)[1:numElem]
+  res <- paste("<center><table border=1 style='border-collapse:collapse;table-layout: fixed;text-align:center;width:auto;'><tr><td colspan=", numElem+1, ">", class(qm)[1], "</td></tr>", collapse="")
+  
+  res <- paste(res, "<tr><td><b>Node</b></td>", collapse="")
+  for(i in nameElem) 
+    res <- paste(res, "<td><b>", fancyName(i), "</b></td>", collapse="")
+  res <- paste(res, "</tr>", collapse="")
+  for (i in 1:length(qm$s)) {
+    res <- paste(res, "<tr><td>", i, "</td><td>",
+                 distrToText(qm$serviceDistribution[[i]]), "</td><td>",
+                 qm$s[i], "</td>", sep="")
+    if (i == 1)
+      res <- paste(res, "<td>", qm$staclients, "</td><td>", qm$transitions, "</td><td>", qm$nclients, "</td>", sep="")
+    res <- paste(res, "</tr>", sep="")
+  }
+  res <- paste(res, "</tr></table></center>", collapse="")
+  return(res)
+  
+}
+
+HTMLModelBasicData.list <- function(qm) {
+  HTMLModelBasicData(combineSimulations(qm))
+}
+
+HTMLlist <- function(l) {
+   aux <- paste("<ul>", paste("<li><label>", names(l), ":</label> ", lapply(l, function(v){if (!is.null(attribute <- attr(class(v), "package")) && attribute == "distr") distrToText(v) else v}), "</li>", collapse=""), "</ul>", collapse="")
+   return(aux)
+}
+
+HTMLdatatable  <- function(d) {
+  aux <- "<center><table border=1 style='border-collapse:collapse;table-layout: fixed;text-align:center;width:auto;'><tr>"
+  columnnames <- names(d)
+  columnnames[columnnames == "X_empty"] <- ""
+  aux <- paste(aux, paste("<td><b>", columnnames, "</b></td>", collapse=""), sep="")
+  for(i in 1:nrow(d)) {
+    aux <- paste(aux, "<tr>", sep="")
+    for (j in 1:ncol(d))
+      aux <- paste(aux, "<td>", d[i, j], "</td>", sep="")
+    aux <- paste(aux, "</tr>", sep="")
+  }
+  return(paste(aux, "</table></center>", sep=""))
+}
+
+HTMLmatrix  <- function(m, rownames=NULL, colnames=NULL, corner=NULL) {
+  res <- "<center><table border=1 style='border-collapse:collapse;table-layout: fixed;text-align:center;width:auto;'>"
+  if (!is.null(colnames) && length(colnames) == ncol(m))
+    res <- paste(res, "<tr><td><b>",if(!is.null(corner)) {corner},"</b></td>", paste("<td><b>", colnames, "</b></td>", collapse=""), "</tr>", collapse="")
+  for(i in 1:nrow(m)) {
+    res <- paste(res, "<tr>", if(!is.null(rownames) && length(rownames)==nrow(m)) {paste("<td><b>", rownames[i], "</b></td>", collapse="")}, paste("<td>", m[i,], "</td>", collapse=""), "</tr>", collapse="")
+  }
+  res <- paste(res, "</table></center>")
+  return(res)
+}
+
+#'Generates a report with the result of an analysis or simulation with the desired sections.
+generateReport <- function(reportData, qm, numTab) {
+#     nReports <- 0
+#     if (!file.exists(file.path("./www/report", "report_main.html"))) {
+#       #target <- HTMLInitFile(file.path("./www/report"), "report", HTMLframe = TRUE, CSSFile = NULL, Title="Arqas Report", useLaTeX = FALSE, useGrid=FALSE)
+#       #cat("<script src='../shared/jquery-ui/js/jquery-1.9.1.js' type='text/javascript'></script>", file = target, append = TRUE, sep = " ")
+#       cat("<script src='./report.js' type='text/javascript'></script>", file = target, append = TRUE, sep = " ")
+#       menu <- HTMLSetFile(file.path("./www/report", "report_menu.html"))
+#     }
+#     else {
+#       target <- HTMLSetFile(file.path("./www/report", "report_main.html"))
+#       menu <- HTMLSetFile(file.path("./www/report", "report_menu.html"))
+#       menuContent <- unique(readLines(menu,skipNul = TRUE))
+#       for (i in menuContent) {
+#         if(!is.null(aux <- grep("class='reportEntry'", i)) & length(aux) > 0)
+#           nReports <- nReports+1 
+#       }
+#     }
+
+    if (is.null(reportData$title) | reportData$title == "") {
+      reportData$title <- paste("ArqasReport", reportData$nReports+1, sep="")
+    }
+    
+    rep.body <- paste("<div id='ArqasReport", reportData$nReports, "'>", sep="")
+#     R2HTML::HTML(paste("<div id='ArqasReport", nReports, "'>", sep=""), file=target)
+    rep.body <- paste(rep.body, "<center><u><a name='", reportData$title, "-", reportData$nReports, "'></a><h3>",reportData$title,"</h3></u></center>", sep="")
+#     R2HTML::HTML(paste("<h3><a name='", reportData$title, "'>",reportData$title,"</a></h3>", sep=""), file=target)
+    rep.menu <- paste("<li><b><a href='javascript:void(0);' name='",reportData$title,"-", reportData$nReports, "' >", reportData$title, "</a></b>  <a id='", reportData$title, "-", reportData$nReports, "-hide' mytarget='ArqasReport", reportData$nReports, "' href='javascript:void(0);'>[Hide]</a>  <a id='", reportData$title, "-", reportData$nReports, "-print' href='javascript:void(0);' mytarget='ArqasReport", reportData$nReports, "'>[Print]</a></li><ul>", sep="")
+#     R2HTML::HTML(paste("<a href='report_main.html#", reportData$title, "' target='main' class='reportEntry'>", reportData$title, "</a>", sep=""), file=menu)
+#     R2HTML::HTML("<ul>", file=menu)
+    rep.body <- paste(rep.body,"<h4>Model info: </h4><br>", sep="" )
+#     R2HTML::HTML(paste("<h4>Model info: </h4><br>", sep=""), file=target);
+    rep.body <- paste(rep.body,HTMLModelBasicData(qm))
+#     R2HTML::HTML(HTMLModelBasicData(qm), file=target)
+    for(section in reportData$checkboxes)
+      switch(section$val,
+                 "summary"= {
+#                              R2HTML::HTML(paste("<h4><a name='", reportData$title, "-summary'></a>Summary: </h4><br>", sep=""), file=target)
+                               rep.body <- paste(rep.body, "<h4><a name='", reportData$title, "-", reportData$nReports, "-summary'></a>Summary: </h4><br>", HTMLdatatable(toDatatable(if(any(class(qm)=="list")) combineSimulations(qm) else qm)), sep="")
+                               rep.menu <- paste(rep.menu, "<li><a href='javascript:void(0);' name='", reportData$title, "-", reportData$nReports, "-summary'>Summary</a></li>", sep="")
+#                              R2HTML::HTML(paste("<li><a href='report_main.html#", reportData$title, "-summary' target='main'>Summary</a></li>", sep=""), file=menu)
+#                              R2HTML::HTML(HTMLdatatable(toDatatable(qm)), file=target)
+                   },
+                 "probabilities" = {
+#                                     R2HTML::HTML(paste("<h4><a name='", reportData$title, "-probabilities'></a>Probabilities: </h4><br>", sep=""), file=target)
+                                      rep.body <- paste(rep.body, "<h4><a name='", reportData$title, "-", reportData$nReports, "-probabilities'></a>Probabilities: </h4><br>", sep="")
+                                      rep.menu <- paste(rep.menu, "<li><a href='javascript:void(0);' name='", reportData$title, "-", reportData$nReports, "-probabilities'>Probabilities</a></li>", sep="")
+#                                     R2HTML::HTML(paste("<li><a href='report_main.html#", reportData$title, "-probabilities' target='main'>Probabilities</a></li>", sep=""), file=menu)
+                                    if (any(class(qm) == "ClosedJackson")) {
+                                         aux <- data.frame()
+                                        rangePn <- section$data$from:section$data$to
+                                        for(i in 1:length(qm$s)) {
+                                          aux <- rbind(aux, data.frame(list(n=rangePn, Pn=Pi(qm, rangePn, i), node=rep(i, length(rangePn)))))
+                                        }
+                                        rep.body <- paste(rep.body, HTMLdatatable(aux), sep="")
+#                                         R2HTML::HTML(HTMLdatatable(rep.body), file=target)
+                                    }
+                                    else {
+                                        rep.body <- paste(rep.body, HTMLdatatable(datatablePnQn(qm, range(section$data$from, section$data$to))), sep="")
+#                                         R2HTML::HTML(HTMLdatatable(datatablePnQn(qm, range(section$data$from, section$data$to))), file=target)
+                                    }},
+                 "waitingtimes"  = {
+                                      rep.body <- paste(rep.body, "<h4><a name ='", reportData$title, "-",reportData$nReports, "-waitingtimes'></a>Waiting Times: </h4><br>",
+                                                   HTMLdatatable(datatableWtWqt(qm, range(section$data$from, section$data$to), section$data$step)), sep="")
+                                      rep.menu <- paste(rep.menu, "<li><a href='javascript:void(0);' name ='", reportData$title, "-",reportData$nReports, "-waitingtimes'>Waiting times</a></li>", sep="" )
+#                                     R2HTML::HTML(paste("<h4><a name ='", reportData$title, "-waitingtimes'></a>Waiting Times: </h4><br>", sep=""), file=target)
+#                                     R2HTML::HTML(paste("<li><a href='report_main.html#", reportData$title, "-waitingtimes' target='main'>Waiting times</a></li>", sep=""), file=menu)
+#                                     R2HTML::HTML(HTMLdatatable(datatableWtWqt(qm, range(section$data$from, section$data$to), section$data$step)), file=target)
+                                    },
+                 "waitingplots"   = {
+                                      rep.body <- paste(rep.body, "<h4><a name='", reportData$title, "-", reportData$nReports, "-waitingplots'></a>Waiting Plots: </h4><br>", sep="")
+#                                     R2HTML::HTML(paste("<h4><a name='", reportData$title, "-waitingplots'></a>Waiting Plots: </h4><br>", sep=""), file=target)
+                                      rep.menu <- paste(rep.menu, "<li><a href='javascript:void(0);' name='", reportData$title, "-", reportData$nReports, "-waitingplots'>Waiting Plots</a></li>", sep="")
+#                                      R2HTML::HTML(paste("<li><a href='report_main.html#", reportData$title, "-waitingplots' target='main'>Waiting Plots</a></li>", sep=""), file=menu)
+                                      outfile <- tempfile(fileext='.png')
+                                      summaryWtWqt(qm, seq(section$data$from, section$data$to, by=section$data$step))
+                                      ggsave(outfile, width=11, height=6.5, dpi=75)
+                                      rep.body <- paste(rep.body, "<center>", base64::img(outfile), "</center>", sep="")
+#                                     R2HTML::HTML(paste("<center><img src='./plots/", basename(outfile), "'></img></center>", sep=""), file=target)
+                                    },
+                 "probabilitiesplots" = {
+                                          rep.body <- paste(rep.body, "<h4><a name='", reportData$title, "-",reportData$nReports, "-probabilitiesplot'></a>Probabilities Plots: </h4><br>", sep="" )
+#                                         R2HTML::HTML(paste("<h4><a name='", reportData$title, "-probabilitiesplot'></a>Probabilities Plots: </h4><br>", sep=""), file=target)
+                                          rep.menu <- paste(rep.menu, "<li><a href='javascript:void(0);' name='", reportData$title, "-",reportData$nReports, "-probabilitiesplot'>Probabilities Plot</a></li>", sep="")
+#                                          R2HTML::HTML(paste("<li><a href='report_main.html#", reportData$title, "-probabilitiesplot' target='main'>Probabilities Plot</a></li>", sep=""), file=menu)
+                                         outfile <- tempfile(fileext='.png')
+                                         summaryPnQn(qm, seq(section$data$from, section$data$to, 1))
+                                         ggsave(outfile, width=11, height=6.5, dpi=75)
+                                         rep.body <- paste(rep.body, "<center>", base64::img(outfile), "</center>", sep="")
+#                                         R2HTML::HTML(paste("<center><img src='./plots/", basename(outfile), "' alt='test'></img></center>", sep=""), file=target)
+                                        },
+                "networkgraph" = {
+                                    rep.body <- paste(rep.body, "<h4><a name='", reportData$title, "-", reportData$nReports, "-networkgraph'></a>Network Graph: </h4><br>" , sep="")
+#                                   R2HTML::HTML(paste("<h4><a name='", reportData$title, "-networkgraph'></a>Network Graph: </h4><br>", sep=""), file=target)
+                                    rep.menu <- paste(rep.menu, "<li><a href='javascript:void(0);' name='", reportData$title, "-", reportData$nReports, "-networkgraph'>Network graph</a></li>", sep="" )
+#                                   R2HTML::HTML(paste("<li><a href='report_main.html#", reportData$title, "-networkgraph' target='main'>Network graph</a></li>", sep=""), file=menu)
+                                    rep.body <- paste(rep.body, "<center><img src='", section$data$image,"'></img></center>", sep="")
+#                                   R2HTML::HTML(paste("<center><img src='", section$data$image,"'></img></center>", sep=""), file=target)
+                                    rep.body <- paste(rep.body, "<center><h5>Routing Matrix</h5></center><br>", sep="")
+                                    if (any(class(qm)=="list")) {
+                                        combined <- combineSimulations(qm)
+                                        rep.body <- paste(rep.body, HTMLmatrix(combined$prob, 1:nrow(combined$prob), 1:ncol(combined$prob), "from\\to"), sep="")
+                                    } else
+                                      rep.body <- paste(rep.body, HTMLmatrix(qm$prob, 1:nrow(qm$prob), 1:ncol(qm$prob), "from\\to"), sep="")
+#                                   R2HTML::HTML("<center><h5>Routing Matrix</h5></center><br>", file=target)
+#                                   R2HTML::HTML(HTMLmatrix(qm$prob, 1:nrow(qm$prob), 1:ncol(qm$prob), "from\\to"), file=target)
+                                  },
+                "combinedprobabilities" = {
+                                            rep.body <- paste(rep.body, "<h4><a name='", reportData$title, "-", reportData$nReports, "-combinedprobabilities'></a>Combined Probabilities: </h4><br>", sep="")
+#                                           R2HTML::HTML(paste("<h4><a name='", reportData$title, "-combinedprobabilities'></a>Combined Probabilities: </h4><br>", sep=""), file=target)
+                                            rep.menu <- paste(rep.menu, "<li><a href='javascript:void(0);' name='", reportData$title, "-", reportData$nReports, "-combinedprobabilities'>Combined Probabilities</a></li>", sep="")
+#                                           R2HTML::HTML(paste("<li><a href='report_main.html#", reportData$title, "-combinedprobabilities' target='main'>Combined Probabilities</a></li>", sep=""), file=menu)
+#                                           print(unlist(section$data$combinedprobabilities))
+                                            auxDataFrame <- data.frame(Pn(qm, unlist(section$data$combinedprobabilities)))
+                                            colnames(auxDataFrame) <- c(paste("P(", paste(section$data$combinedprobabilities, collapse=","), ")", collapse=""))
+                                            rep.body <- paste(rep.body, HTMLdatatable(auxDataFrame), sep="")
+#                                           R2HTML::HTML(HTMLdatatable(auxDataFrame),  file=target)
+                                          },
+                "LEvolution" = {
+                                 rep.body <- paste(rep.body, "<h4><a name='", reportData$title, "-", reportData$nReports, "-levolution'></a>Evolution of L: </h4><br>", sep="")
+                                 rep.menu <- paste(rep.menu, "<li><a href='javascript:void(0);' name='", reportData$title, "-", reportData$nReports, "-levolution'>Evolution of L</a></li>", sep="")
+                                 outfile <- tempfile(fileext='.png')
+                                 if(class(qm)[1] == 'list')
+                                      if (!is.null(qm[[1]]$transitions))
+                                        maxrange <- qm[[1]]$staclients + qm[[1]]$transitions
+                                      else
+                                        maxrange <- qm[[1]]$staclients + qm[[1]]$nclients
+                                 else
+                                      maxrange <- qm$staclients + qm$nclients
+                                 summarySimple(qm, 1, maxrange, "L", depth=section$data$depth, nSimulation=section$data$nsim)
+                                 ggsave(outfile, width=11, height=6.5, dpi=75)
+                                 rep.body <- paste(rep.body, "<center>", base64::img(outfile), "</center>", sep="")
+                },
+                "LqEvolution" = {
+                                  rep.body <- paste(rep.body, "<h4><a name='", reportData$title, "-", reportData$nReports, "-lqevolution'></a>Evolution of Lq: </h4><br>", sep="")
+                                  rep.menu <- paste(rep.menu, "<li><a href='javascript:void(0);' name='", reportData$title, "-", reportData$nReports, "-lqevolution'>Evolution of Lq</a></li>", sep="")
+                                  outfile <- tempfile(fileext='.png')
+                                  if(class(qm)[1] == 'list')
+                                    if (!is.null(qm[[1]]$transitions))
+                                      maxrange <- qm[[1]]$staclients + qm[[1]]$transitions
+                                    else
+                                      maxrange <- qm[[1]]$staclients + qm[[1]]$nclients
+                                  else
+                                    maxrange <- qm$staclients + qm$nclients
+                                  summarySimple(qm, 1, maxrange, "Lq", depth=section$data$depth, nSimulation=section$data$nsim)
+                                  ggsave(outfile, width=11, height=6.5, dpi=75)
+                                  rep.body <- paste(rep.body, "<center>", base64::img(outfile), "</center>", sep="")                  
+                },
+                "WEvolution" = {
+                                rep.body <- paste(rep.body, "<h4><a name='", reportData$title, "-", reportData$nReports, "-wevolution'></a>Evolution of W: </h4><br>", sep="")
+                                rep.menu <- paste(rep.menu, "<li><a href='javascript:void(0);' name='", reportData$title, "-", reportData$nReports, "-wevolution'>Evolution of W</a></li>", sep="")
+                                outfile <- tempfile(fileext='.png')
+                                if(class(qm)[1] == 'list')
+                                  if (!is.null(qm[[1]]$transitions))
+                                    maxrange <- qm[[1]]$staclients + qm[[1]]$transitions
+                                  else
+                                    maxrange <- qm[[1]]$staclients + qm[[1]]$nclients
+                                else
+                                  maxrange <- qm$staclients + qm$nclients
+                                summarySimple(qm, 1, maxrange, "W", depth=section$data$depth, nSimulation=section$data$nsim)
+                                ggsave(outfile, width=11, height=6.5, dpi=75)
+                                rep.body <- paste(rep.body, "<center>", base64::img(outfile), "</center>", sep="")                  
+                },
+                "WqEvolution" = {
+                                rep.body <- paste(rep.body, "<h4><a name='", reportData$title, "-", reportData$nReports, "-wqevolution'></a>Evolution of Wq: </h4><br>", sep="")
+                                rep.menu <- paste(rep.menu, "<li><a href='javascript:void(0);' name='", reportData$title, "-", reportData$nReports, "-wqevolution'>Evolution of Wq</a></li>", sep="")
+                                outfile <- tempfile(fileext='.png')
+                                if(class(qm)[1] == 'list')
+                                  if (!is.null(qm[[1]]$transitions))
+                                    maxrange <- qm[[1]]$staclients + qm[[1]]$transitions
+                                else
+                                  maxrange <- qm[[1]]$staclients + qm[[1]]$nclients
+                                else
+                                  maxrange <- qm$staclients + qm$nclients
+                                summarySimple(qm, 1, maxrange, "Wq", depth=section$data$depth, nSimulation=section$data$nsim)
+                                ggsave(outfile, width=11, height=6.5, dpi=75)
+                                rep.body <- paste(rep.body, "<center>", base64::img(outfile), "</center>", sep="")                  
+                },
+                "ClientsEvolution" = {
+                                rep.body <- paste(rep.body, "<h4><a name='", reportData$title, "-", reportData$nReports, "-clientsevolution'></a>Evolution of Clients: </h4><br>", sep="")
+                                rep.menu <- paste(rep.menu, "<li><a href='javascript:void(0);' name='", reportData$title, "-", reportData$nReports, "-clientsevolution'>Evolution of Clients</a></li>", sep="")
+                                outfile <- tempfile(fileext='.png')
+                                if(class(qm)[1] == 'list')
+                                  maxrange <- qm[[1]]$staclients + qm[[1]]$nclients
+                                else
+                                  maxrange <- qm$staclients + qm$nclients
+                                summarySimple(qm, 1, maxrange, "Clients", depth=section$data$depth, nSimulation=section$data$nsim)
+                                ggsave(outfile, width=11, height=6.5, dpi=75)
+                                rep.body <- paste(rep.body, "<center>", base64::img(outfile), "</center>", sep="")                  
+                },
+                "IntensityEvolution" = {
+                                rep.body <- paste(rep.body, "<h4><a name='", reportData$title, "-", reportData$nReports, "-intensityevolution'></a>Evolution of Intensity: </h4><br>", sep="")
+                                rep.menu <- paste(rep.menu, "<li><a href='javascript:void(0);' name='", reportData$title, "-", reportData$nReports, "-intensityevolution'>Evolution of Intensity</a></li>", sep="")
+                                outfile <- tempfile(fileext='.png')
+                                if(class(qm)[1] == 'list')
+                                  maxrange <- qm[[1]]$staclients + qm[[1]]$nclients
+                                else
+                                  maxrange <- qm$staclients + qm$nclients
+                                summarySimple(qm, 1, maxrange, "Intensity", depth=section$data$depth, nSimulation=section$data$nsim)
+                                ggsave(outfile, width=11, height=6.5, dpi=75)
+                                rep.body <- paste(rep.body, "<center>", base64::img(outfile), "</center>", sep="")                  
+                }
+      )
+#     R2HTML::HTML("</ul>", file=menu)
+    rep.menu <- paste(rep.menu, "</ul><br>", sep="")
+    rep.body <- paste(rep.body, "</div><hr>", sep="")
+#     R2HTML::HTML("</div>",file=target)
+#     HTMLhr(file=target)
+    return(list(rep.menu, rep.body))
 }
 
 #' Is the main function of the UI. Generate the panels and rules the behavior of the inputs and buttons.
@@ -620,6 +1078,7 @@ loadUIModel <- function(model, session, input, output, parameters=NULL) {UseMeth
 loadUIModel.MarkovianModel <- function(model, session, input, output, parameters=NULL) {
   numTab <- input$results$total
   updateTabInput(session, "results", list("add"),  list(newTab(model$name, generatePanel(session, input, model, parameters))), removeButton=TRUE)
+  updateSaveReportInput(session, paste("saveReport", numTab, sep=""), action="setSections", sections=list("summary"="Summary", "probabilities" = "Probabilities", "waitingtimes"="Waiting times", "waitingplots" ="Waiting Distribution plots", "probabilitiesplots"="Probabilities plots"))
   eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Summary', '<div id=\"error", numTab, "\" class=\"shiny-html-output\"></div><h4>Basic information:</h4><hr><div id=\"summaryDatatable", numTab, "\" class=\"shiny-mydatatable-output\"></div><h4>Probabilities:</h4><hr><div id=\"pnDatatable", numTab, "\" class=\"shiny-mydatatable-output\"></div><br><br><h4>Waiting times:</h4><hr><div id=\"wtDatatable", numTab, "\" class=\"shiny-mydatatable-output\"></div>')))\n", sep="")))
   eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Waiting distributions plot', '<div id=\"waitplotDiv", numTab, "\" class=\"shiny-image-output\"></div>')))\n", sep=""))) 
   eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Probabilites plot', '<div id=\"probplotDiv", numTab, "\" class=\"shiny-image-output\"></div>')))\n", sep=""))) 
@@ -637,7 +1096,13 @@ loadUIModel.MarkovianModel <- function(model, session, input, output, parameters
                         "updateJQueryUISliderInput(session, 'WtWqtSlider", numTab, "', step=input$WtWqtStep", numTab,")\n",
                         "}, priority=4)", sep="")))
   
+  eval(parse(text=paste("observe({\n",
+                          "if (!is.null(reportData <- input$saveReport", numTab, ") && reportData$button > 0)\n",
+                              "isolate({updateSaveReportInput(session, 'saveReport", numTab, "', action='saveReport', html=generateReport(reportData, values$qm))})\n",
+                        "})", sep="")))
+  
    values <- reactiveValues()
+
    eval(parse(text=paste(
       "observe({\n",
         "tryCatch({\n",
@@ -677,20 +1142,20 @@ loadUIModel.MarkovianModel <- function(model, session, input, output, parameters
                                                               "isolate({\n",
                                                                   "toDatatable(values$qm)\n",
                                                               "})\n",
-                                                             "}, options=list(bJQueryUI=TRUE, sDom='rt', bFilter=0, bSort=0, noFooter=NULL, mainTitle=isolate({class(values$qm)[1]})))\n",
+                                                             "}, options=list(jQueryUI=TRUE, dom='rt', searching=FALSE, ordering=FALSE, noFooter=NULL, mainTitle=isolate({class(values$qm)[1]})))\n",
       "output$pnDatatable", numTab, "<- renderDataTable({input$CalculateButton", input$results$total, "\n",
                                                         "if (is.null(values$qm)) stop(values$error)\n",
                                                         "isolate({\n",
                                                             "datatablePnQn(values$qm, range(input$PnQnMin", numTab, ", input$PnQnMax", numTab, "))\n",
                                                         "})\n",
-                                        "}, options = list(bJQueryUI=TRUE, sPaginationType='full_numbers', iDisplayLength=10, bSortClasses = TRUE, noFooter=NULL))\n",
+                                        "}, options = list(jQueryUI=TRUE, searching=FALSE, ordering=FALSE, pagingType='full_numbers', pageLength=10, orderClasses = TRUE, noFooter=NULL))\n",
       
       "output$wtDatatable", numTab, "<- renderDataTable({input$CalculateButton", input$results$total, "\n",
                                                         "if (is.null(values$qm)) stop(values$error)\n",
                                                         "isolate({\n",
                                                            "datatableWtWqt(values$qm, range(input$WtWqtMin", numTab, ", input$WtWqtMax", numTab, "), input$WtWqtStep", numTab, ")\n",
                                                         "})\n",
-                                        "}, options = list(bJQueryUI=TRUE, sPaginationType='full_numbers', iDisplayLength=10, bSortClasses = TRUE, noFooter=NULL))",
+                                        "}, options = list(jQueryUI=TRUE, searching=FALSE, ordering=FALSE, searching=FALSE, pagingType='full_numbers', pageLength=10, orderClasses = TRUE, noFooter=NULL))\n",
       sep="")))
 }
 
@@ -721,10 +1186,36 @@ renderNetwork <- function(expr, env=parent.frame(), quoted=FALSE, func=NULL) {
 loadUIModel.OpenJackson <- function(model, session, input, output, parameters=NULL) {
   numTab <- input$results$total
   updateTabInput(session, "results", list("add"),  list(newTab(model$name, generatePanel(session, input, model, parameters))), removeButton=TRUE)
+  updateSaveReportInput(session, paste("saveReport", numTab, sep=""), action="setSections", sections=list("summary"="Summary", "combinedprobabilities" = "Combined Probabilities", "networkgraph"="Network Graph"))
   eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Summary', '<div id=\"error", numTab, "\" class=\"shiny-html-output\"></div><div id=\"summaryDatatable", numTab, "\" class=\"shiny-mydatatable-output\"></div><div id=\"probDatatable", numTab, "\" class=\"shiny-mydatatable-output\"></div>')))\n", sep="")))
   eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Network', '<div id=\"networkDiv", numTab, "\" class=\"shiny-network-output\"></div>')))\n", sep="")))  
   espChar <- "[\\\\]"
   values <- reactiveValues()
+  
+  eval(parse(text=paste("observe({\n",
+                        "if (!is.null(reportData <- input$saveReport", numTab, ") && reportData$button > 0)\n",
+                        "isolate({updateSaveReportInput(session, 'saveReport", numTab, "', action='saveReport', html=generateReport(reportData, values$qm))})\n",
+                        "})", sep="")))
+  skipfromfileupload <- FALSE
+  eval(parse(text=paste("observe({\n",
+                          "if (!is.null(input$numNodes", numTab, ") & !skipfromfileupload){\n",
+                            "isolate({\n",
+                              "numServers <- length(input$s", numTab, ")\n",
+                              "if (input$numNodes", numTab, " >= numServers){\n",
+                                 "updateVectorInput(session, 'lambda", numTab, "', value=c(input$lambda", numTab, ", rep(input$lambda", numTab, "[length(input$lambda", numTab,")], input$numNodes", numTab, " -numServers)))\n",
+                                 "updateVectorInput(session, 'mu", numTab, "', value=c(input$mu", numTab, ", rep(input$mu", numTab, "[length(input$mu", numTab,")], input$numNodes", numTab, " - numServers)))\n",
+                                 "updateVectorInput(session, 's", numTab, "', value=c(input$s", numTab, ", rep(input$s", numTab, "[length(input$s", numTab,")], input$numNodes", numTab, " - numServers)))\n",
+                               "} else {\n",
+                                 "updateVectorInput(session, 'lambda", numTab, "', value=input$lambda", numTab, "[-((input$numNodes", numTab, "+1):numServers)])\n",
+                                 "updateVectorInput(session, 'mu", numTab, "', value=input$mu", numTab, "[-((input$numNodes", numTab, "+1):numServers)])\n",
+                                 "updateVectorInput(session, 's", numTab, "', value=input$s", numTab, "[-((input$numNodes", numTab, "+1):numServers)])\n",                      
+                               "}\n",
+                              "updateNodesMatrixInput(session, 'p", numTab, "', input$numNodes", numTab, ")\n",
+                        "})\n",
+                        "} else\n",
+                            "skipfromfileupload <<- FALSE\n",
+                        "})\n", sep="")))
+  
   eval(parse(text=paste(
     "observe({\n",
       "input$compute", numTab, "\n",
@@ -746,7 +1237,7 @@ loadUIModel.OpenJackson <- function(model, session, input, output, parameters=NU
                                         "isolate({\n",
                                           "toDatatable(values$qm)\n",
                                         "})\n",
-                                        "}, options=list(bJQueryUI=TRUE, sDom='rt', bFilter=0, bSort=0, noFooter=NULL, mainTitle=isolate({class(values$qm)[1]}), rowHeaders=TRUE))\n",
+                                        "}, options=list(jQueryUI=TRUE, dom='rt', searching=FALSE, ordering=FALSE, noFooter=NULL, mainTitle=isolate({class(values$qm)[1]}), rowHeaders=TRUE))\n",
     "output$probDatatable", numTab, "<- renderDataTable({\n",
                                       "if (is.null(values$qm)) return()\n",
                                       "ns <- ''\n",
@@ -754,7 +1245,7 @@ loadUIModel.OpenJackson <- function(model, session, input, output, parameters=NU
                                           "ns <- paste(ns, i, ', ', sep='')\n",
                                       "ns <- paste(ns, input$pn1nk", numTab, "[length(input$pn1nk", numTab, ")], sep='')\n",
                                       "data.frame(paste('P(', ns, ')', sep=''), Pn(values$qm, input$pn1nk", numTab, "))\n",
-                                  "}, options=list(bJQueryUI=TRUE, sDom='rt', bFilter=0, bSort=0, noFooter=NULL, rowHeaders=TRUE, colnames=c('Combined Probabilities', 'Value')))\n",
+                                  "}, options=list(jQueryUI=TRUE, dom='rt', searching=FALSE, ordering=FALSE, noFooter=NULL, rowHeaders=TRUE, colnames=c('Combined Probabilities', 'Value')))\n",
     "output$networkDiv", numTab, "<- renderNetwork({\n",
                                         "if (is.null(values$qm)) stop(values$error)\n",
                                         "isolate({\n",
@@ -789,12 +1280,13 @@ loadUIModel.OpenJackson <- function(model, session, input, output, parameters=NU
             "inputdata <- read.table(route, fill=TRUE)\n",
             "numnodes <- ncol(inputdata)\n",
             "colnames(inputdata) <- as.character(1:numnodes)\n",
-            "isolate({if(class(values$qm)[1] == 'OpenJackson') {\n",
+            "isolate({\n",
+              "skipfromfileupload <<- TRUE\n",
+              "updateNumericInput(session, 'numNodes", numTab, "', value=numnodes)\n",
               "updateVectorInput(session, 'lambda", numTab, "', value=as.numeric(inputdata[1,]))\n",
               "updateVectorInput(session, 'mu", numTab, "', value=as.numeric(inputdata[2,]))\n",
               "updateVectorInput(session, 's", numTab, "', value=as.numeric(inputdata[3,]))\n",
               "updateMatrixInput(session, 'p", numTab, "', value=inputdata[4:(3+numnodes),], size=numnodes)\n",
-             "}\n",
             "})\n",
          "}\n",
     "})\n",
@@ -810,12 +1302,36 @@ loadUIModel.ClosedJackson <- function(model, session, input, output, parameters=
   updateTabInput(session, "results", list("add"),  list(newTab(model$name, generatePanel(session, input, model, parameters))), removeButton=TRUE)
   eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Summary', '<div id=\"error", numTab, "\" class=\"shiny-html-output\"></div><div id=\"summaryDatatable", numTab, "\" class=\"shiny-mydatatable-output\"></div><div id=\"probDataTable", numTab, "\" class=\"shiny-mydatatable-output\"></div><div id=\"pnDiv", numTab, "\" class=\"shiny-mydatatable-output\"></div>')))\n", sep="")))
   eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Network', '<div id=\"networkDiv", numTab, "\" class=\"shiny-network-output\"></div>')))\n", sep="")))
-  
+  updateSaveReportInput(session, paste("saveReport", numTab, sep=""), action="setSections", sections=list("summary"="Summary", "combinedprobabilities" = "Combined Probabilities", "probabilities" = "Probabilities", "networkgraph"="Network Graph"))
   eval(parse(text=paste("observe({\n",
                         "updateNumericInput(session, 'PnMin", numTab, "', value=input$PnSlider", numTab,"$values[1])\n",
                         "updateNumericInput(session, 'PnMax", numTab, "', value=input$PnSlider", numTab,"$values[2])}, priority=2)", sep="")))
   
   values <- reactiveValues()
+  
+  eval(parse(text=paste("observe({\n",
+                        "if (!is.null(reportData <- input$saveReport", numTab, ") && reportData$button > 0)\n",
+                        "isolate({updateSaveReportInput(session, 'saveReport", numTab, "', action='saveReport', html=generateReport(reportData, values$qm))})\n",
+                        "})", sep="")))
+  
+  skipfrominputfile <- FALSE
+  eval(parse(text=paste("observe({\n",
+                          "if (!is.null(input$numNodes", numTab, ") & !skipfrominputfile){\n",
+                             "isolate({\n",
+                                 "numServers <- length(input$s", numTab, ")\n",
+                                 "if (input$numNodes", numTab, " >= numServers){\n",
+                                    "updateVectorInput(session, 'mu", numTab, "', value=c(input$mu", numTab, ", rep(input$mu", numTab, "[length(input$mu", numTab,")], input$numNodes", numTab, " - numServers)))\n",
+                                    "updateVectorInput(session, 's", numTab, "', value=c(input$s", numTab, ", rep(input$s", numTab, "[length(input$s", numTab,")], input$numNodes", numTab, " - numServers)))\n",
+                                  "} else {\n",
+                                    "updateVectorInput(session, 'mu", numTab, "', value=input$mu", numTab, "[-((input$numNodes", numTab, "+1):numServers)])\n",
+                                    "updateVectorInput(session, 's", numTab, "', value=input$s", numTab, "[-((input$numNodes", numTab, "+1):numServers)])\n",                      
+                                  "}\n",
+                                "updateNodesMatrixInput(session, 'p", numTab, "', input$numNodes", numTab, ")\n",
+                            "})\n",
+                          "} else\n",
+                              "skipfrominputfile <<- FALSE\n",
+                        "})\n", sep="")))
+  
   espChar <- "[\\\\]"
   eval(parse(text=paste(
     "observe({\n",
@@ -838,7 +1354,7 @@ loadUIModel.ClosedJackson <- function(model, session, input, output, parameters=
                               "isolate({\n",
                                   "toDatatable(values$qm)\n",
                               "})\n",
-                              "}, options=list(bJQueryUI=TRUE, sDom='rt', bFilter=0, bSort=0, noFooter=NULL, mainTitle=isolate({class(values$qm)[1]}), rowHeaders=TRUE))\n",
+                              "}, options=list(jQueryUI=TRUE, dom='rt', searching=FALSE, ordering=FALSE, noFooter=NULL, mainTitle=isolate({class(values$qm)[1]}), rowHeaders=TRUE))\n",
       "output$probDataTable", numTab, "<- renderDataTable({\n",
                 "if (is.null(values$qm)) stop(values$error)\n",
                 "ns <- ''\n",
@@ -846,7 +1362,7 @@ loadUIModel.ClosedJackson <- function(model, session, input, output, parameters=
                     "ns <- paste(ns, i, ', ', sep='')\n",
                 "ns <- paste(ns, input$pn1nk", numTab, "[length(input$pn1nk", numTab, ")], sep='')\n",
                 "data.frame(paste('P(', ns, ')', sep=''), sprintf('%9.5g', Pn(values$qm, input$pn1nk", numTab, ")))\n",
-               "}, options=list(bJQueryUI=TRUE, sDom='rt', bFilter=0, bSort=0, noFooter=NULL, rowHeaders=TRUE, colnames=c('Combined Probabilites', 'Value')))\n",
+               "}, options=list(jQueryUI=TRUE, dom='rt', searching=FALSE, ordering=FALSE, noFooter=NULL, rowHeaders=TRUE, colnames=c('Combined Probabilites', 'Value')))\n",
       "output$pnDiv", numTab, "<- renderDataTable({\n",
                                      "if (is.null(values$qm)) return(data.frame())\n",
                                      "if (input$CalculateButton", numTab, ">= 0){\n",
@@ -859,7 +1375,7 @@ loadUIModel.ClosedJackson <- function(model, session, input, output, parameters=
                                           "return(res)\n",
                                           "})\n",
                                      "}\n",
-                                  "}, options = list(bJQueryUI=TRUE, sPaginationType='full_numbers', iDisplayLength=10, bSortClasses = TRUE))\n",
+                                  "}, options = list(jQueryUI=TRUE, searching=FALSE, ordering=FALSE, pagingType='full_numbers', pageLength=10, orderClasses = TRUE))\n",
       "output$networkDiv", numTab, "<- renderNetwork({\n",
             "if (is.null(values$qm)) stop(values$error)\n",
              "isolate({\n",
@@ -888,6 +1404,8 @@ loadUIModel.ClosedJackson <- function(model, session, input, output, parameters=
         "numnodes <- ncol(inputdata)\n",
         "colnames(inputdata) <- as.character(1:numnodes)\n",
         "isolate({\n",
+           "skipfrominputfile <<-TRUE\n",
+           "updateNumericInput(session, 'numNodes", numTab, "', value=numnodes)\n",
            "updateVectorInput(session, 'mu", numTab, "', value=as.numeric(inputdata[1,]))\n",
            "updateVectorInput(session, 's", numTab, "', value=as.numeric(inputdata[2,]))\n",
            "updateMatrixInput(session, 'p", numTab, "', value=inputdata[3:(2+numnodes),], size=numnodes)\n",
@@ -905,9 +1423,9 @@ loadUIModel.ClosedJackson <- function(model, session, input, output, parameters=
 loadUIModel.SimulatedModel <- function(model, session, input, output, parameters=NULL) {
   numTab <- input$results$total
   updateTabInput(session, "results", list("add"),  list(newTab(model$name, generatePanel(session, input, model, parameters))), removeButton=TRUE)
-  eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Convergence', '", selectInput(inputId=paste("convergenceSelector", input$results$total, sep=""), label=tags$b("Select a variable:"), choices=c("L"="L", "Lq"="Lq", "W"="W", "Wq"="Wq", "Clients"="Clients", "Intensity" = "Intensity")), "<div id=\"errorConvergence", numTab, "\" class=\"shiny-html-output\"></div><div id=\"convergenceDiv", numTab, "\" class=\"shiny-image-output\"></div>')))\n", sep="")))
-  eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Summary', '<div id=\"errorSummary", numTab, "\" class=\"shiny-html-output\"></div><div id=\"summaryDatatable", numTab, "\" class=\"shiny-mydatatable-output\"></div>')))\n", sep="")))
-  
+  eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Convergence', '", selectInput(inputId=paste("convergenceSelector", input$results$total, sep=""), label=tags$b("Select a variable:"), choices=c("L"="L", "Lq"="Lq", "W"="W", "Wq"="Wq", "Clients"="Clients", "Intensity" = "Intensity")),selectInput(inputId=paste("simulationSelector", input$results$total, sep=""), label="", choices=c("---"=0)) ,"<div id=\"errorConvergence", numTab, "\" class=\"shiny-html-output\"></div><div id=\"convergenceDiv", numTab, "\" class=\"shiny-image-output\"></div>')))\n", sep="")))
+  eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Summary', '<div id=\"summaryDatatable", numTab, "\" class=\"shiny-mydatatable-output\"></div>')))\n", sep="")))
+  updateSaveReportInput(session, paste('saveReport', numTab, sep=""), disable=TRUE)
   updateSelectDistrInput(session=session, inputId=paste("arrivalDistribution", numTab, sep=""), distributions=selectDistr(WithNoArrivals=FALSE))
   updateSelectDistrInput(session, paste("serviceDistribution", numTab, sep=""), selectDistr(WithNoArrivals=FALSE))
   
@@ -918,18 +1436,31 @@ loadUIModel.SimulatedModel <- function(model, session, input, output, parameters
   values$qm <- NULL
   values$error <- 'Click on the button Compute to iniciate the simulation'
   buttonvalue <- 0
+  
+  eval(parse(text=paste("observe({\n",
+    "if (!is.null(reportData <- input$saveReport", numTab, ") && reportData$button > 0 && buttonvalue > 0)\n",
+        "isolate({updateSaveReportInput(session, 'saveReport", numTab, "', action='saveReport', html=generateReport(reportData, values$qm))})\n",
+    "})\n", sep="")))
+  
   #updateButtonInput(session, paste("compute", numTab, sep=""), disabled = TRUE)
   eval(parse(text=paste("observe({\n",
                             "if (!is.null(input$compute", numTab, ")) {\n",
                               "if (input$compute", numTab, " > 0) {\n",
                                 "buttonvalue <<- buttonvalue + 1\n",
                                 "isolate({\n",
+                                    "if (!input$historic", numTab, ")\n",
+                                        "updateSaveReportInput(session, 'saveReport", numTab, "', action='setSections', sections=list('summary'='Summary'))\n",
+                                    "else\n",
+                                        "updateSaveReportInput(session, 'saveReport", numTab, "', action='setSections', sections=list('summary'='Summary', 'LEvolution'='Evolution of L', 'LqEvolution' = 'Evolution of Lq', 'WEvolution' = 'Evolution of W', 'WqEvolution'='Evolution of Wq', 'ClientsEvolution' = 'Evolution of Clients', 'IntensityEvolution'='Evolution of Intesity'))\n",
                                     "tryCatch({\n",
                                         "values$qm <- model$fun(", generateArguments(model$fun, numTab),")\n",
                                     "}, error=function(e) {\n",
                                          "values$qm <<- NULL\n",
                                           "values$error <<- e$message\n",
-                                    "}, finally=updateButtonInput(session, 'compute", numTab, "', FALSE))\n",
+                                    "}, finally={\n",
+                                        "updateButtonInput(session, 'compute", numTab, "', FALSE)\n",
+                                        "updateSaveReportInput(session, 'saveReport", numTab, "', disable=FALSE)\n",
+                                    "})\n",
                                  "})\n",
                                 "}\n",
                              "}\n",
@@ -937,12 +1468,22 @@ loadUIModel.SimulatedModel <- function(model, session, input, output, parameters
                         "observe({\n",
                           "values$qm\n",
                           "output$summaryDatatable", numTab, "<- renderDataTable({\n",
-                                  "if (is.null(values$qm) && buttonvalue==0) stop()\n",
+                                  "if (is.null(values$qm) && buttonvalue==0) stop(values$error)\n",
                                   "if (is.null(values$qm) && buttonvalue> 0) stop(values$error)\n",
                                   "isolate({\n", 
                                       "toDatatable(combineSimulations(values$qm))\n",
                                   "})\n",
-                          "}, options=list(bJQueryUI=TRUE, sDom='rt', bFilter=0, bSort=0, noFooter=NULL, mainTitle=isolate({if(class(values$qm)[1] == 'list'){class(values$qm[[1]])[1]}else{class(values$qm)[1]}}), rowHeaders=is.list(values$qm$out$l)))\n",   
+                          "}, options=list(jQueryUI=TRUE, dom='rt', searching=FALSE, ordering=FALSE, noFooter=NULL, mainTitle=isolate({if(class(values$qm)[1] == 'list'){class(values$qm[[1]])[1]}else{class(values$qm)[1]}}), rowHeaders=is.list(values$qm$out$l)))\n",   
+                        "})\n",
+                        "observe({\n",
+                            "if (!is.null(selected <- input$convergenceSelector", numTab, ")) {\n",
+                                "isolate({\n",
+                                    "if (selected == 'Clients')",
+                                        "updateSelectInput(session, 'simulationSelector",numTab,"', choices=1:length(values$qm))\n",  
+                                    "else\n",
+                                        "updateSelectInput(session, 'simulationSelector", numTab, "', choices=c('----'))\n",
+                                "})\n",
+                            "}\n",
                         "})\n",
                         "output$errorSummary", numTab, "<- output$errorConvergence", numTab, " <- renderUI({\n",
                           "if (is.null(values$qm) && buttonvalue == 0)\n",
@@ -955,13 +1496,14 @@ loadUIModel.SimulatedModel <- function(model, session, input, output, parameters
                               "if (is.null(values$qm)) stop()\n",
                               "input$CalculateButton", numTab, "\n",
                               "selected <- input$convergenceSelector", numTab, "\n",
+                              "sim <- input$simulationSelector", numTab, "\n",
                               "outfile <- tempfile(fileext='.svg')\n",
                               "isolate({\n",
                                 "if(class(values$qm)[1] == 'list')\n",
-                                    "maxrange <- values$qm[[1]]$Staclients + values$qm[[1]]$Nclients\n",
+                                    "maxrange <- values$qm[[1]]$staclients + values$qm[[1]]$nclients\n",
                                 "else\n",
-                                    "maxrange <- values$qm$Staclients + values$qm$Nclients\n",
-                                "summarySimple(values$qm, 1, maxrange, selected, depth=input$depth", numTab, ")\n",
+                                    "maxrange <- values$qm$staclients + values$qm$nclients\n",
+                                "summarySimple(values$qm, 1, maxrange, selected, depth=input$depth", numTab, ", nSimulation=sim)\n",
                                 "ggsave(outfile, width=11, height=6.5, dpi=100)\n",
                               "})\n",
                               "list(src=outfile, alt='Loading plot...', title='')
@@ -975,20 +1517,47 @@ loadUIModel.SimulatedModel <- function(model, session, input, output, parameters
 loadUIModel.Open <- function(model, session, input, output, parameters=NULL) {
   numTab <- input$results$total
   updateTabInput(session, "results", list("add"),  list(newTab(model$name, generatePanel(session, input, model, parameters))), removeButton=TRUE)
-  eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Convergence', '", selectInput(inputId=paste("convergenceSelector", input$results$total, sep=""), label=tags$b("Select a variable:"), choices=c("L"="L", "Lq"="Lq", "W"="W", "Wq"="Wq", "Clients"="Clients", "Intensity" = "Intensity")),"<div id=\"errorConvergence", numTab, "\" class=\"shiny-html-output\"></div><div id=\"convergenceDiv", numTab, "\" class=\"shiny-image-output\"></div>')))\n", sep="")))
-  eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Summary', '<div id=\"errorSummary", numTab, "\" class=\"shiny-html-output\"></div><div id=\"summaryDatatable", numTab, "\" class=\"shiny-mydatatable-output\"></div>')))\n", sep="")))
+  eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Convergence', '", selectInput(inputId=paste("convergenceSelector", input$results$total, sep=""), label=tags$b("Select a variable:"), choices=c("L"="L", "Lq"="Lq", "W"="W", "Wq"="Wq")), "<div id=\"errorConvergence", numTab, "\" class=\"shiny-html-output\"></div><div id=\"convergenceDiv", numTab, "\" class=\"shiny-image-output\"></div>')))\n", sep="")))
+  eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Summary', '<div id=\"summaryDatatable", numTab, "\" class=\"shiny-mydatatable-output\"></div>')))\n", sep="")))
   eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Network', '<div id=\"errorNetwork", numTab, "\" class=\"shiny-html-output\"></div><div id=\"networkDiv", numTab, "\" class=\"shiny-network-output\"></div>')))\n", sep="")))
   updateVectorSelectDistrInput(session, paste("serviceDistribution", numTab, sep=""), selectDistr(WithNoArrivals=FALSE))
   updateVectorSelectDistrInput(session, paste("arrivalDistribution", numTab, sep=""), selectDistr())
+  updateSaveReportInput(session, paste('saveReport', numTab, sep=""), disable=TRUE)
+  
  # updateNumericInput(session, paste("nproc", numTab, sep=""), value=detectCores(), min=1)
   values <- reactiveValues()
   buttonvalue <- 0
   values$qm <- NULL
   values$error <- 'Click on the button Compute to iniciate the simulation'
+ 
+  eval(parse(text=paste("observe({\n",
+                          "if (!is.null(reportData <- input$saveReport", numTab, ") && reportData$button > 0 && buttonvalue > 0)\n",
+                              "isolate({updateSaveReportInput(session, 'saveReport", numTab, "', action='saveReport', html=generateReport(reportData, values$qm))})\n",
+                        "})\n", sep="")))
+ 
+  eval(parse(text=paste("observe({\n",
+                            "if (!is.null(input$numNodes", numTab, ")){\n",
+                              "isolate({\n",
+                                  "updateNodesVectorSelectDistrInput(session, 'serviceDistribution", numTab, "', input$numNodes", numTab, ")\n",
+                                  "updateNodesVectorSelectDistrInput(session, 'arrivalDistribution", numTab, "', input$numNodes", numTab, ")\n",
+                                  "numServers <- length(input$s", numTab, ")\n",
+                                  "if(numServers <= input$numNodes", numTab, ")\n",
+                                    "updateVectorInput(session, 's", numTab, "', value=c(input$s", numTab, ", rep(input$s", numTab, "[length(input$s", numTab,")], input$numNodes", numTab, "-numServers)))\n",
+                                  "else\n",
+                                    "updateVectorInput(session, 's", numTab, "', value=input$s", numTab, "[-((input$numNodes", numTab, "+1):numServers)])\n",
+                                  "updateNodesMatrixInput(session, 'p", numTab, "', input$numNodes", numTab, ")\n",
+                              "})\n",
+                             "}\n",
+                        "})\n", sep="")))
+ 
   eval(parse(text=paste("observe({\n",
                           "if (!is.null(input$compute", numTab, ")) {\n",
                             "if (input$compute", numTab, " > 0) {\n",
                               "buttonvalue <<- buttonvalue + 1\n",
+                               "if (!input$historic", numTab, ")\n",
+                                 "updateSaveReportInput(session, 'saveReport", numTab, "', action='setSections', sections=list('summary'='Summary', 'networkgraph'='Network graph'))\n",
+                               "else\n",
+                                 "updateSaveReportInput(session, 'saveReport", numTab, "', action='setSections', sections=list('summary'='Summary', 'networkgraph'='Network graph', 'LEvolution'='Evolution of L', 'LqEvolution' = 'Evolution of Lq', 'WEvolution' = 'Evolution of W', 'WqEvolution'='Evolution of Wq'))\n",
                                "isolate({\n",
                                  "tryCatch({\n",
                                     "values$qm <- model$fun(", generateArguments(model$fun, numTab),")\n",
@@ -1010,12 +1579,11 @@ loadUIModel.Open <- function(model, session, input, output, parameters=NULL) {
                         "observe({\n",
                            "values$qm\n",
                            "output$summaryDatatable", numTab, "<- renderDataTable({\n",
-                                 "if (is.null(values$qm) && buttonvalue==0) stop()\n",
-                                 "if (is.null(values$qm) && buttonvalue> 0) stop(values$error)\n",
+                                 "if (is.null(values$qm) && buttonvalue >= 0) stop(values$error)\n",
                                  "isolate({\n", 
                                    "toDatatable(combineSimulations(values$qm))\n",
                                  "})\n",
-                           "}, options=list(bJQueryUI=TRUE, sDom='rt', bFilter=0, bSort=0, noFooter=NULL, mainTitle=isolate({if(class(values$qm)[1] == 'list'){class(values$qm[[1]])[1]}else{class(values$qm)[1]}}), rowHeaders=TRUE))\n",   
+                           "}, options=list(jQueryUI=TRUE, dom='rt', searching=FALSE, ordering=FALSE, noFooter=NULL, mainTitle=isolate({if(class(values$qm)[1] == 'list'){class(values$qm[[1]])[1]}else{class(values$qm)[1]}}), rowHeaders=TRUE))\n",   
                         "})\n",
                         "output$networkDiv", numTab, "<- renderNetwork({\n",
                           "if (is.null(values$qm) && buttonvalue==0) stop()\n",
@@ -1024,7 +1592,7 @@ loadUIModel.Open <- function(model, session, input, output, parameters=NULL) {
                              "qm <- combineSimulations(values$qm)\n",
                              "res <- list(type='Open', arrivaldistr=sapply(qm$arrivalDistribution, distrToText),
                                                        servicedistr=sapply(qm$serviceDistribution, distrToText), 
-                                                       s=qm$Servs, p=qm$Prob,
+                                                       s=qm$s, p=qm$prob,
                                                        l=if(!is.null(qm$out$l$mean)){qm$out$l$mean}else{qm$out$l}, lq=if(!is.null(qm$out$lq$mean)){qm$out$lq$mean}else{qm$out$lq}, 
                                                        w=if(!is.null(qm$out$w$mean)){qm$out$w$mean}else{qm$out$w}, wq=if(!is.null(qm$out$wq$mean)){qm$out$wq$mean}else{qm$out$wq})\n",
                            "})\n",
@@ -1037,7 +1605,7 @@ loadUIModel.Open <- function(model, session, input, output, parameters=NULL) {
                           "selected <- input$convergenceSelector", numTab, "\n",
                           "outfile <- tempfile(fileext='.svg')\n",
                           "isolate({\n",
-                            "summarySimple(values$qm, 1, (values$qm[[1]]$Staclients + values$qm[[1]]$Transitions), selected, depth=input$depth", numTab, ")\n",
+                            "summarySimple(values$qm, 1, (values$qm[[1]]$staclients + values$qm[[1]]$transitions), selected, depth=input$depth", numTab, ", nSimulation=input$simulationSelector", numTab, ")\n",
                             "ggsave(outfile, width=11, height=6.5, dpi=100)\n",
                           "})\n",
                           "list(src=outfile, alt='Loading plot...', title='')
@@ -1052,27 +1620,52 @@ loadUIModel.Open <- function(model, session, input, output, parameters=NULL) {
 loadUIModel.Closed <- function(model, session, input, output, parameters=NULL) {
   numTab <- input$results$total
   updateTabInput(session, "results", list("add"),  list(newTab(model$name, generatePanel(session, input, model, parameters))), removeButton=TRUE)
-  eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Convergence', '", selectInput(inputId=paste("convergenceSelector", input$results$total, sep=""), label=tags$b("Select a variable:"), choices=c("L"="L", "Lq"="Lq", "W"="W", "Wq"="Wq", "Clients"="Clients", "Intensity" = "Intensity")),"<div id=\"errorConvergence", numTab, "\" class=\"shiny-html-output\"></div><div id=\"convergenceDiv", numTab, "\" class=\"shiny-image-output\"></div>')))\n", sep="")))
-  eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Summary', '<div id=\"errorSummary", numTab, "\" class=\"shiny-html-output\"></div><div id=\"summaryDatatable", numTab, "\" class=\"shiny-mydatatable-output\"></div>')))\n", sep="")))
+  eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Convergence', '", selectInput(inputId=paste("convergenceSelector", input$results$total, sep=""), label=tags$b("Select a variable:"), choices=c("L"="L", "Lq"="Lq", "W"="W", "Wq"="Wq")),"<div id=\"errorConvergence", numTab, "\" class=\"shiny-html-output\"></div><div id=\"convergenceDiv", numTab, "\" class=\"shiny-image-output\"></div>')))\n", sep="")))
+  eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Summary', '<div id=\"summaryDatatable", numTab, "\" class=\"shiny-mydatatable-output\"></div>')))\n", sep="")))
   eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Network', '<div id=\"errorNetwork", numTab, "\" class=\"shiny-html-output\"></div><div id=\"networkDiv", numTab, "\" class=\"shiny-network-output\"></div>')))\n", sep="")))
   updateVectorSelectDistrInput(session, paste("serviceDistribution", numTab, sep=""), selectDistr(WithNoArrivals=FALSE))
+  updateSaveReportInput(session, paste('saveReport', numTab, sep=""), disable=TRUE)
+  
   values <- reactiveValues()
   buttonvalue <- 0
   values$qm <- NULL
   values$error <- 'Click on the button Compute to iniciate the simulation'
+  
+  eval(parse(text=paste("observe({\n",
+                        "if (!is.null(reportData <- input$saveReport", numTab, ") && reportData$button > 0 && buttonvalue > 0)\n",
+                        "isolate({updateSaveReportInput(session, 'saveReport", numTab, "', action='saveReport', html=generateReport(reportData, values$qm))})\n",
+                        "})\n", sep="")))
+  
+  eval(parse(text=paste("observe({\n",
+                           "if (!is.null(input$numNodes", numTab, ")){\n",
+                              "isolate({\n",
+                                   "updateNodesVectorSelectDistrInput(session, 'serviceDistribution", numTab, "', input$numNodes", numTab, ")\n",
+                                   "numServers <- length(input$s", numTab, ")\n",
+                                   "if(numServers <= input$numNodes", numTab, ")\n",
+                                      "updateVectorInput(session, 's", numTab, "', value=c(input$s", numTab, ", rep(input$s", numTab, "[length(input$s", numTab,")], input$numNodes", numTab, "-numServers)))\n",
+                                   "else\n",
+                                      "updateVectorInput(session, 's", numTab, "', value=input$s", numTab, "[-((input$numNodes", numTab, "+1):numServers)])\n",
+                                   "updateNodesMatrixInput(session, 'p", numTab, "', input$numNodes", numTab, ")\n",
+                                "})\n",
+                            "}\n",
+                        "})\n", sep="")))
   #updateNumericInput(session, paste("nproc", numTab, sep=""), value=detectCores(), min=1)
   eval(parse(text=paste("observe({\n",
                         "if (!is.null(input$compute", numTab, ")) {\n",
                           "if (input$compute", numTab, " > 0) {\n",
                              "buttonvalue <<- buttonvalue + 1\n",
                               "isolate({\n",
-                              "tryCatch({\n",
-                              "str(input$serviceDistribution", numTab, ")\n",
-                              "values$qm <- model$fun(", generateArguments(model$fun, numTab),")\n",
-                              "}, error=function(e) {\n",
-                              "values$qm <<- NULL\n",
-                              "values$error <<- e$message\n",
-                              "}, finally=updateButtonInput(session, 'compute", numTab, "', FALSE))\n",
+                                "if (!input$historic", numTab, ")\n",
+                                  "updateSaveReportInput(session, 'saveReport", numTab, "', action='setSections', sections=list('summary'='Summary', 'networkgraph'='Network graph'))\n",
+                                "else\n",
+                                  "updateSaveReportInput(session, 'saveReport", numTab, "', action='setSections', sections=list('summary'='Summary', 'networkgraph'='Network graph', 'LEvolution'='Evolution of L', 'LqEvolution' = 'Evolution of Lq', 'WEvolution' = 'Evolution of W', 'WqEvolution'='Evolution of Wq'))\n",
+                                "tryCatch({\n",
+                                  "str(input$serviceDistribution", numTab, ")\n",
+                                  "values$qm <- model$fun(", generateArguments(model$fun, numTab),")\n",
+                                "}, error=function(e) {\n",
+                                  "values$qm <<- NULL\n",
+                                  "values$error <<- e$message\n",
+                                "}, finally=updateButtonInput(session, 'compute", numTab, "', FALSE))\n",
                               "})\n",
                             "}\n",
                           "}\n",
@@ -1080,12 +1673,11 @@ loadUIModel.Closed <- function(model, session, input, output, parameters=NULL) {
                         "observe({\n",
                           "values$qm\n",
                           "output$summaryDatatable", numTab, "<- renderDataTable({\n",
-                             "if (is.null(values$qm) && buttonvalue==0) stop()\n",
-                             "if (is.null(values$qm) && buttonvalue> 0) stop(values$error)\n",
+                             "if (is.null(values$qm) && buttonvalue >= 0) stop(values$error)\n",
                              "isolate({\n", 
                                "toDatatable(combineSimulations(values$qm))\n",
                              "})\n",
-                           "}, options=list(bJQueryUI=TRUE, sDom='rt', bFilter=0, bSort=0, noFooter=NULL, mainTitle=isolate({if(class(values$qm)[1] == 'list'){class(values$qm[[1]])[1]}else{class(values$qm)[1]}}), rowHeaders=TRUE))\n",   
+                           "}, options=list(jQueryUI=TRUE, dom='rt', searching=FALSE, ordering=FALSE, noFooter=NULL, mainTitle=isolate({if(class(values$qm)[1] == 'list'){class(values$qm[[1]])[1]}else{class(values$qm)[1]}}), rowHeaders=TRUE))\n",   
                         "})\n",
                         "output$networkDiv", numTab, "<- renderNetwork({\n",
                             "if (is.null(values$qm) && buttonvalue==0) stop()\n",
@@ -1093,7 +1685,7 @@ loadUIModel.Closed <- function(model, session, input, output, parameters=NULL) {
                             "isolate({\n",
                             "qm <- combineSimulations(values$qm)\n",
                             "res <- list(type='Closed', servicedistr=sapply(qm$serviceDistribution, distrToText), 
-                                                      s=qm$Servs, p=qm$Prob,
+                                                      s=qm$s, p=qm$prob,
                                                       l=if(!is.null(qm$out$l$mean)){qm$out$l$mean}else{qm$out$l}, lq=if(!is.null(qm$out$lq$mean)){qm$out$lq$mean}else{qm$out$lq}, 
                                                       w=if(!is.null(qm$out$w$mean)){qm$out$w$mean}else{qm$out$w}, wq=if(!is.null(qm$out$wq$mean)){qm$out$wq$mean}else{qm$out$wq})\n",
                              "})\n",
@@ -1101,7 +1693,7 @@ loadUIModel.Closed <- function(model, session, input, output, parameters=NULL) {
                         "})\n",
                         "output$errorConvergence", numTab, "<- output$errorSummary", numTab, "<- output$errorNetwork", numTab, " <- renderUI({\n",
                           "if (is.null(values$qm) && buttonvalue==0)\n",
-                            "return(tagList(tags$h5(values$error, ':a', sep='')))\n",
+                            "return(tagList(tags$h5(values$error, sep='')))\n",
                           "else if (is.null(values$qm))\n",
                             "stop(values$error)\n",
                           "return()\n",
@@ -1113,7 +1705,7 @@ loadUIModel.Closed <- function(model, session, input, output, parameters=NULL) {
                           "selected <- input$convergenceSelector", numTab, "\n",
                           "outfile <- tempfile(fileext='.svg')\n",
                           "isolate({\n",
-                            "summarySimple(values$qm, 1, (values$qm[[1]]$Staclients + values$qm[[1]]$Transitions), selected, depth=input$depth", numTab, ")\n",
+                            "summarySimple(values$qm, 1, (values$qm[[1]]$staclients + values$qm[[1]]$transitions), selected, depth=input$depth", numTab, ")\n",
                             "ggsave(outfile, width=11, height=6.5, dpi=100)\n",
                           "})\n",
                           "list(src=outfile, alt='Loading plot...', title='')
@@ -1167,7 +1759,7 @@ loadUIModel.DataAnalysis <- function(model, session, input, output) {
                             "isolate({\n", 
                                "goodnessFit(values$fit)\n",
                             "})\n",
-                          "}, options=list(bJQueryUI=TRUE, sDom='rt', bFilter=0, bSort=0, noFooter=NULL, mainTitle='Goodness of fit', rowHeaders=TRUE, colnames=c('Distributions/Statistics', 'Chi Square Statistic', 'Chi Square p-value', 'Kolmogorov-Smirnov Statistic', 'Kolmogorov-Smirnov p-value')))\n",   
+                          "}, options=list(jQueryUI=TRUE, dom='rt', searching=FALSE, ordering=FALSE, noFooter=NULL, mainTitle='Goodness of fit', rowHeaders=TRUE, colnames=c('Distributions/Statistics', 'Chi Square Statistic', 'Chi Square p-value', 'Kolmogorov-Smirnov Statistic', 'Kolmogorov-Smirnov p-value')))\n",   
                         "output$estimationsDatatable", numTab, "<- renderDataTable({\n",
                             "if (is.null(values$fit)) stop(values$error)\n",
                            #"print(input$ModelOutputTabs", numTab, "$selected)\n",
@@ -1178,7 +1770,7 @@ loadUIModel.DataAnalysis <- function(model, session, input, output) {
                                   "names(valuescopy$unif$estimate) <- c('Min', 'Max')\n",
                               "dataFit <- toDatatable(valuescopy, ", numTab,")\n",
                             "})\n",
-                        "}, options=list(bJQueryUI=TRUE, sDom='rt', bFilter=0, bSort=0, noFooter=NULL, colnames=c('Fitted distributions', '')))\n", 
+                        "}, options=list(jQueryUI=TRUE, dom='rt', searching=FALSE, ordering=FALSE, noFooter=NULL, colnames=c('Fitted distributions', '')))\n", 
                         "output$cumulativeDiv", numTab, "<- renderImage({\n",
                             "if (is.null(values$fit)) stop(values$error)\n",
                             "outfile <- tempfile(fileext='.svg')\n",
@@ -1226,6 +1818,24 @@ loadUIModel.DataAnalysis <- function(model, session, input, output) {
                         sep="")))
 }
 
+loadUIModel.Report <- function(model, session, input, output) {
+  numTab <- input$results$total
+  tryCatch({
+      updateTabInput(session, "results", list("add"),  list(newTab("Reports", generatePanel(session, input, model, parameters))), removeButton=TRUE)
+  }, finally = {
+    
+    eval(parse(text=paste("output$reportBodyOutput", numTab, " <- renderNetwork({list('numTab'=numTab, input$refresh", numTab, ")})\n",
+                          "output$reportMenuOutput", numTab, " <- renderNetwork({list('numTab'=numTab, input$refresh", numTab, ")})\n",
+                          "output$printAllOutput", numTab, " <- renderNetwork({if (!is.null(input$printAll", numTab, "))\n",
+                                                                                  "isolate({\n",
+                                                                                    "if (input$printAll", numTab, " > 0)\n",
+                                                                                        "return(list('numTab'=numTab))\n",
+                                                                                   "})\n",
+                                                                               "})\n",
+                          sep="")))
+  })
+}
+
 #' Transforms a list into a numeric vector
 #' @param x A list
 #' @return A numeric vector
@@ -1235,33 +1845,40 @@ tonumeric <- function(x) {
       a <- c(a, x[[i]])
     return(a)
 }
-initialize <- TRUE
 shinyServer(function(input, output, session) {
-  if (initialize) {
     options(shiny.usecairo=FALSE)
     initMenu <- list(
                   list(id = 0, title="Markovian models", submenu=generateMenu(uiList[sapply(sapply(uiList, class), function(v) {any(v=="MarkovianModel")}, simplify="array")])),
                   list(id = 0, title="Simulated Models", submenu=generateMenu(uiList[sapply(sapply(uiList, class), function(v) {any(v=="SimulatedModel")}, simplify="array")])),
-                  list(id = length(uiList)+1, title="Data analysis", submenu=list())
+                  list(id = length(uiList)+1, title="Data analysis", submenu=list()),
+                  list(id = length(uiList)+2, title="Reports", submenu=list())
                 )
     isolate({
       updateMenuInput(session, "menu", action=list("set"), menu=initMenu)
       updateTabInput(session, "results", action=list("add"), value=list(newTab("Start", "Select a model in the menu at left to start.")), removeButton=TRUE)
     })
-    dataAnalysisModel <- list()
+    dataAnalysisModel <- reportModel <- list()
     class(dataAnalysisModel) <- "DataAnalysis"
+    class(reportModel) <- "Report"
     observe({
       if (!is.null(input$menu$clicked)){
         isolate({
                 id <- as.numeric(input$menu$selected)
-                 switch(as.character(input$menu$selected),
-                        "0" = NULL, 
-                        loadUIModel(uiList[[id]], session, input, output),
-                        "21" = loadUIModel(dataAnalysisModel, session, input, output)
-                 )
+                if (id == 0)
+                    NULL
+                else if (id == length(uiList)+1)
+                  loadUIModel(dataAnalysisModel, session, input, output)
+                else if (id == length(uiList)+2)
+                  loadUIModel(reportModel, session, input, output)
+                else
+                  loadUIModel(uiList[[id]], session, input, output)
+                
+#                  switch(as.character(input$menu$selected),
+#                         "0" = NULL, 
+#                         loadUIModel(uiList[[id]], session, input, output),
+#                         "21" = loadUIModel(dataAnalysisModel, session, input, output)
+#                  )
         })
       }
     })
-    initialize <<- FALSE
-  }
 })
