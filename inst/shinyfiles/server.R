@@ -170,24 +170,25 @@ selectDistr <- function(WithNoArrivals=TRUE) {
 
 
 distrToText <- function(d) {
-  if (class(d)[1] == "no_distr") return("-")
-  paramNames <- slotNames(param(d))
-  paramNames <- paramNames[-length(paramNames)]
-  values <- sapply(paramNames, function(x){slot(param(d), x)})
-  
-  if (length(values) > 1) {
-    str <- paste("(", values[1], ", ", sep="")
-    for(i in 2:length(values)) {
-      if (i != length(values))
-        str <- paste(str, values[i], ", ", sep="")
-      else
-        str <- paste(str, values[i], ")", sep="")
-    }
-  }
-  else {
-    str <- paste("(", values[1], ")", sep="")
-  }
-  return(paste(class(d)[1], str, sep=""))
+      if (class(d)[1] == "no_distr") return("-")
+      paramNames <- slotNames(param(d))
+      #paramNames <- rep("a", 6)
+      paramNames <- paramNames[-length(paramNames)]
+      values <- sapply(paramNames, function(x){slot(param(d), x)})
+      
+      if (length(values) > 1) {
+        str <- paste("(", values[1], ", ", sep="")
+        for(i in 2:length(values)) {
+          if (i != length(values))
+            str <- paste(str, values[i], ", ", sep="")
+          else
+            str <- paste(str, values[i], ")", sep="")
+        }
+      }
+      else {
+        str <- paste("(", values[1], ")", sep="")
+      }
+      return(paste(class(d)[1], str, sep=""))
 }
 
 distrDefaultValues <- function(distrModel) {
@@ -673,23 +674,23 @@ HTMLModelBasicData.MarkovianModel <- function(qm) {
   }
   numElem <- length(qm)-1
   nameElem <- names(qm)[1:numElem]
-  res <- paste("<center><table border=1 style='border-collapse:collapse;table-layout: fixed;text-align:center;width:auto;'><tr><td colspan=", numElem, ">", gsub(pattern = "_", replacement = "/", x = class(qm)[1]), "</td></tr>", collapse="")
+  res <- paste("<table border=1 style='border-collapse:collapse;table-layout: fixed;text-align:center;width:auto;'><tr style='border: 1px solid #77d5f7;  font-weight: normal; color: #ffffff; background-color: #41a1c9;'><td colspan=", numElem, "><b>", gsub(pattern = "_", replacement = "/", x = class(qm)[1]), "</b></td></tr>", collapse="")
   
-  res <- paste(res, "<tr>", collapse="")
+  res <- paste(res, "<tr style='border: 1px solid #77d5f7;  font-weight: normal; color: #ffffff; background-color: #41a1c9;'>", collapse="")
   for(i in nameElem) 
     res <- paste(res, "<td><b>", fancyName(i), "</b></td>", collapse="")
   res <- paste(res, "</tr><tr>", collapse="")
   for(j in 1:numElem)
     res <- paste(res, "<td>", if (!is.null(attribute <- attr(class(qm[[j]]), "package")) && attribute == "distr") distrToText(qm[[j]]) else qm[[j]], "</td>", collapse="")
   
-  res <- paste(res, "</tr></table></center>", collapse="")
+  res <- paste(res, "</tr></table>", collapse="")
 
   return(res)
 }
 
 HTMLModelBasicData.ClosedJackson <- function(qm) {
-  res <- paste("<center><table border=1 style='border-collapse:collapse;table-layout: fixed;text-align:center;width:auto;'><tr><td colspan=5>", class(qm)[1], "</td></tr>", collapse="")
-  res <- paste(res, "<tr><td><b>Node</b></td><td><b>Arrival Distribution</b></td><td><b>Service Distribution</b></td><td><b>Servers</b></td><td><b>Number of customers</b></td></tr>", collapse="")
+  res <- paste("<table border=1 style='border-collapse:collapse;table-layout: fixed;text-align:center;width:auto;'><tr style='border: 1px solid #77d5f7;  font-weight: normal; color: #ffffff; background-color: #41a1c9;'><td colspan=5><b>", class(qm)[1], "</b></td></tr>", collapse="")
+  res <- paste(res, "<tr style='border: 1px solid #77d5f7;  font-weight: normal; color: #ffffff; background-color: #41a1c9;'><td><b>Node</b></td><td><b>Arrival Distribution</b></td><td><b>Service Distribution</b></td><td><b>Servers</b></td><td><b>Number of customers</b></td></tr>", collapse="")
   for (i in 1:(qm$k)) {
     res <- paste(res, "<tr><td>", i, "</td>", "<td>Exp(", round(qm$lambda[i], 6), ")</td>", "<td>Exp(", qm$mu[i], ")</td>", "<td>", qm$servers[i], "</td>", collapse="")
     if (i == 1)
@@ -697,7 +698,7 @@ HTMLModelBasicData.ClosedJackson <- function(qm) {
     else
       res <- paste(res, "</tr>", collapse="")
   }
-  res <- paste(res, "</table></center>", collapse="")
+  res <- paste(res, "</table>", collapse="")
   return(res)
 }
 
@@ -710,9 +711,9 @@ HTMLModelBasicData.Network <- function(qm) {
   }
   numElem <- length(qm$nodes[[1]])
   nameElem <- names(qm$nodes[[1]])
-  res <- paste("<center><table border=1 style='border-collapse:collapse;table-layout: fixed;text-align:center;width:auto;'><tr><td colspan=", numElem, ">", class(qm)[1], "</td></tr>", collapse="")
+  res <- paste("<table border=1 style='border-collapse:collapse;table-layout: fixed;text-align:center;width:auto;'><tr style='border: 1px solid #77d5f7;  font-weight: normal; color: #ffffff; background-color: #41a1c9;'><td colspan=", numElem, "><b>", class(qm)[1], "</b></td></tr>", collapse="")
   
-  res <- paste(res, "<tr><td><b>Node</b></td>", collapse="")
+  res <- paste(res, "<tr style='border: 1px solid #77d5f7;  font-weight: normal; color: #ffffff; background-color: #41a1c9;'><td><b>Node</b></td>", collapse="")
   for (i in nameElem[-length(nameElem)]) 
     res <- paste(res, "<td><b>", fancyName(i), "</b></td>", collapse="")
   
@@ -723,7 +724,7 @@ HTMLModelBasicData.Network <- function(qm) {
       res <- paste(res, "<td>", if (!is.null(attribute <- attr(class(qm$nodes[[i]][[j]]), "package")) && attribute == "distr") distrToText(qm$nodes[[i]][[j]]) else qm$nodes[[i]][[j]], "</td>", collapse="")  
     res <- paste(res, "</tr>")
   }
-  res <- paste(res, "</table></center>", collapse="") 
+  res <- paste(res, "</table>", collapse="") 
   return(res)  
 }
 
@@ -741,16 +742,16 @@ HTMLModelBasicData.SimulatedModel <- function(qm) {
   }
   numElem <- length(qm)-1
   nameElem <- names(qm)[1:numElem]
-  res <- paste("<center><table border=1 style='border-collapse:collapse;table-layout: fixed;text-align:center;width:auto;'><tr><td colspan=", numElem, ">", gsub(pattern = "_", replacement = "/", x = class(qm)[1]), "</td></tr>", collapse="")
+  res <- paste("<table border=1 style='border-collapse:collapse;table-layout: fixed;text-align:center;width:auto;'><tr style='border: 1px solid #77d5f7;  font-weight: normal; color: #ffffff; background-color: #41a1c9;'><td colspan=", numElem, "><b>", gsub(pattern = "_", replacement = "/", x = class(qm)[1]), "</b></td></tr>", collapse="")
   
-  res <- paste(res, "<tr>", collapse="")
+  res <- paste(res, "<tr style='border: 1px solid #77d5f7;  font-weight: normal; color: #ffffff; background-color: #41a1c9;'>", collapse="")
   for(i in nameElem) 
     res <- paste(res, "<td><b>", fancyName(i), "</b></td>", collapse="")
   res <- paste(res, "</tr><tr>", collapse="")
   for(j in 1:numElem)
     res <- paste(res, "<td>", if (!is.null(attribute <- attr(class(qm[[j]]), "package")) && attribute == "distr") distrToText(qm[[j]]) else qm[[j]], "</td>", collapse="")
   
-  res <- paste(res, "</tr></table></center>", collapse="")
+  res <- paste(res, "</tr></table>", collapse="")
   return(res)
 }
 
@@ -766,9 +767,9 @@ HTMLModelBasicData.Open <- function(qm) {
   qmAux <- qm[-4]
   numElem <- length(qmAux)-1
   nameElem <- names(qmAux)[1:numElem]
-  res <- paste("<center><table border=1 style='border-collapse:collapse;table-layout: fixed;text-align:center;width:auto;'><tr><td colspan=", numElem+1, ">", class(qm)[1], "</td></tr>", collapse="")
+  res <- paste("<table border=1 style='border-collapse:collapse;table-layout: fixed;text-align:center;width:auto;'><tr style='border: 1px solid #77d5f7;  font-weight: normal; color: #ffffff; background-color: #41a1c9;'><td colspan=", numElem+1, "><b>", class(qm)[1], "</b></td></tr>", collapse="")
   
-  res <- paste(res, "<tr><td><b>Node</b></td>", collapse="")
+  res <- paste(res, "<tr style='border: 1px solid #77d5f7;  font-weight: normal; color: #ffffff; background-color: #41a1c9;'><td><b>Node</b></td>", collapse="")
   for(i in nameElem) 
     res <- paste(res, "<td><b>", fancyName(i), "</b></td>", collapse="")
   res <- paste(res, "</tr>", collapse="")
@@ -781,7 +782,7 @@ HTMLModelBasicData.Open <- function(qm) {
       res <- paste(res, "<td>", qm$staclients, "</td><td>", qm$transitions, "</td>", sep="")
     res <- paste(res, "</tr>", sep="")
   }
-  res <- paste(res, "</tr></table></center>", collapse="")
+  res <- paste(res, "</tr></table>", collapse="")
   return(res)
   
 }
@@ -799,9 +800,9 @@ HTMLModelBasicData.Closed <- function(qm) {
   qmAux <- qm[-3]
   numElem <- length(qmAux)-1
   nameElem <- names(qmAux)[1:numElem]
-  res <- paste("<center><table border=1 style='border-collapse:collapse;table-layout: fixed;text-align:center;width:auto;'><tr><td colspan=", numElem+1, ">", class(qm)[1], "</td></tr>", collapse="")
+  res <- paste("<table border=1 style='border-collapse:collapse;table-layout: fixed;text-align:center;width:auto;'><tr style='border: 1px solid #77d5f7;  font-weight: normal; color: #ffffff; background-color: #41a1c9;'><td colspan=", numElem+1, "><b>", class(qm)[1], "</b></td></tr>", collapse="")
   
-  res <- paste(res, "<tr><td><b>Node</b></td>", collapse="")
+  res <- paste(res, "<tr style='border: 1px solid #77d5f7;  font-weight: normal; color: #ffffff; background-color: #41a1c9;'><td><b>Node</b></td>", collapse="")
   for(i in nameElem) 
     res <- paste(res, "<td><b>", fancyName(i), "</b></td>", collapse="")
   res <- paste(res, "</tr>", collapse="")
@@ -813,7 +814,7 @@ HTMLModelBasicData.Closed <- function(qm) {
       res <- paste(res, "<td>", qm$staclients, "</td><td>", qm$transitions, "</td><td>", qm$nclients, "</td>", sep="")
     res <- paste(res, "</tr>", sep="")
   }
-  res <- paste(res, "</tr></table></center>", collapse="")
+  res <- paste(res, "</tr></table>", collapse="")
   return(res)
   
 }
@@ -828,7 +829,7 @@ HTMLlist <- function(l) {
 }
 
 HTMLdatatable  <- function(d) {
-  aux <- "<center><table border=1 style='border-collapse:collapse;table-layout: fixed;text-align:center;width:auto;'><tr>"
+  aux <- "<table border=1 style='border-collapse:collapse;table-layout: fixed;text-align:center;width:auto;'><tr style='border: 1px solid #77d5f7;	font-weight: normal; background-color: #41a1c9; color: #ffffff;'>"
   columnnames <- names(d)
   columnnames[columnnames == "X_empty"] <- ""
   aux <- paste(aux, paste("<td><b>", columnnames, "</b></td>", collapse=""), sep="")
@@ -838,17 +839,17 @@ HTMLdatatable  <- function(d) {
       aux <- paste(aux, "<td>", d[i, j], "</td>", sep="")
     aux <- paste(aux, "</tr>", sep="")
   }
-  return(paste(aux, "</table></center>", sep=""))
+  return(paste(aux, "</table>", sep=""))
 }
 
 HTMLmatrix  <- function(m, rownames=NULL, colnames=NULL, corner=NULL) {
-  res <- "<center><table border=1 style='border-collapse:collapse;table-layout: fixed;text-align:center;width:auto;'>"
+  res <- "<table border=1 style='border-collapse:collapse;table-layout: fixed;text-align:center;width:auto;'>"
   if (!is.null(colnames) && length(colnames) == ncol(m))
-    res <- paste(res, "<tr><td><b>",if(!is.null(corner)) {corner},"</b></td>", paste("<td><b>", colnames, "</b></td>", collapse=""), "</tr>", collapse="")
+    res <- paste(res, "<tr style='border: 1px solid #77d5f7;  font-weight: normal; color: #ffffff; background-color: #41a1c9;'><td><b>",if(!is.null(corner)) {corner},"</b></td>", paste("<td><b>", colnames, "</b></td>", collapse=""), "</tr>", collapse="")
   for(i in 1:nrow(m)) {
     res <- paste(res, "<tr>", if(!is.null(rownames) && length(rownames)==nrow(m)) {paste("<td><b>", rownames[i], "</b></td>", collapse="")}, paste("<td>", m[i,], "</td>", collapse=""), "</tr>", collapse="")
   }
-  res <- paste(res, "</table></center>")
+  res <- paste(res, "</table>")
   return(res)
 }
 
@@ -929,7 +930,7 @@ generateReport <- function(reportData, qm, numTab) {
                                       outfile <- tempfile(fileext='.png')
                                       summaryWtWqt(qm, seq(section$data$from, section$data$to, by=section$data$step))
                                       ggsave(outfile, width=11, height=6.5, dpi=75)
-                                      rep.body <- paste(rep.body, "<center>", base64::img(outfile), "</center>", sep="")
+                                      rep.body <- paste(rep.body, base64::img(outfile), sep="")
 #                                     R2HTML::HTML(paste("<center><img src='./plots/", basename(outfile), "'></img></center>", sep=""), file=target)
                                     },
                  "probabilitiesplots" = {
@@ -940,7 +941,7 @@ generateReport <- function(reportData, qm, numTab) {
                                          outfile <- tempfile(fileext='.png')
                                          summaryPnQn(qm, seq(section$data$from, section$data$to, 1))
                                          ggsave(outfile, width=11, height=6.5, dpi=75)
-                                         rep.body <- paste(rep.body, "<center>", base64::img(outfile), "</center>", sep="")
+                                         rep.body <- paste(rep.body, base64::img(outfile), sep="")
 #                                         R2HTML::HTML(paste("<center><img src='./plots/", basename(outfile), "' alt='test'></img></center>", sep=""), file=target)
                                         },
                 "networkgraph" = {
@@ -948,9 +949,9 @@ generateReport <- function(reportData, qm, numTab) {
 #                                   R2HTML::HTML(paste("<h4><a name='", reportData$title, "-networkgraph'></a>Network Graph: </h4><br>", sep=""), file=target)
                                     rep.menu <- paste(rep.menu, "<li><a href='javascript:void(0);' name='", reportData$title, "-", reportData$nReports, "-networkgraph'>Network graph</a></li>", sep="" )
 #                                   R2HTML::HTML(paste("<li><a href='report_main.html#", reportData$title, "-networkgraph' target='main'>Network graph</a></li>", sep=""), file=menu)
-                                    rep.body <- paste(rep.body, "<center><img src='", section$data$image,"'></img></center>", sep="")
+                                    rep.body <- paste(rep.body, "<img src='", section$data$image,"'></img>", sep="")
 #                                   R2HTML::HTML(paste("<center><img src='", section$data$image,"'></img></center>", sep=""), file=target)
-                                    rep.body <- paste(rep.body, "<center><h5>Routing Matrix</h5></center><br>", sep="")
+                                    rep.body <- paste(rep.body, "<h5>Routing Matrix</h5><br>", sep="")
                                     if (any(class(qm)=="list")) {
                                         combined <- combineSimulations(qm)
                                         rep.body <- paste(rep.body, HTMLmatrix(combined$prob, 1:nrow(combined$prob), 1:ncol(combined$prob), "from\\to"), sep="")
@@ -983,7 +984,7 @@ generateReport <- function(reportData, qm, numTab) {
                                       maxrange <- qm$staclients + qm$nclients
                                  summarySimple(qm, 1, maxrange, "L", depth=section$data$depth, nSimulation=section$data$nsim)
                                  ggsave(outfile, width=11, height=6.5, dpi=75)
-                                 rep.body <- paste(rep.body, "<center>", base64::img(outfile), "</center>", sep="")
+                                 rep.body <- paste(rep.body,  base64::img(outfile),  sep="")
                 },
                 "LqEvolution" = {
                                   rep.body <- paste(rep.body, "<h4><a name='", reportData$title, "-", reportData$nReports, "-lqevolution'></a>Evolution of Lq: </h4><br>", sep="")
@@ -998,7 +999,7 @@ generateReport <- function(reportData, qm, numTab) {
                                     maxrange <- qm$staclients + qm$nclients
                                   summarySimple(qm, 1, maxrange, "Lq", depth=section$data$depth, nSimulation=section$data$nsim)
                                   ggsave(outfile, width=11, height=6.5, dpi=75)
-                                  rep.body <- paste(rep.body, "<center>", base64::img(outfile), "</center>", sep="")                  
+                                  rep.body <- paste(rep.body,  base64::img(outfile), sep="")                  
                 },
                 "WEvolution" = {
                                 rep.body <- paste(rep.body, "<h4><a name='", reportData$title, "-", reportData$nReports, "-wevolution'></a>Evolution of W: </h4><br>", sep="")
@@ -1013,7 +1014,7 @@ generateReport <- function(reportData, qm, numTab) {
                                   maxrange <- qm$staclients + qm$nclients
                                 summarySimple(qm, 1, maxrange, "W", depth=section$data$depth, nSimulation=section$data$nsim)
                                 ggsave(outfile, width=11, height=6.5, dpi=75)
-                                rep.body <- paste(rep.body, "<center>", base64::img(outfile), "</center>", sep="")                  
+                                rep.body <- paste(rep.body,  base64::img(outfile), sep="")                  
                 },
                 "WqEvolution" = {
                                 rep.body <- paste(rep.body, "<h4><a name='", reportData$title, "-", reportData$nReports, "-wqevolution'></a>Evolution of Wq: </h4><br>", sep="")
@@ -1028,7 +1029,7 @@ generateReport <- function(reportData, qm, numTab) {
                                   maxrange <- qm$staclients + qm$nclients
                                 summarySimple(qm, 1, maxrange, "Wq", depth=section$data$depth, nSimulation=section$data$nsim)
                                 ggsave(outfile, width=11, height=6.5, dpi=75)
-                                rep.body <- paste(rep.body, "<center>", base64::img(outfile), "</center>", sep="")                  
+                                rep.body <- paste(rep.body,  base64::img(outfile),  sep="")                  
                 },
                 "ClientsEvolution" = {
                                 rep.body <- paste(rep.body, "<h4><a name='", reportData$title, "-", reportData$nReports, "-clientsevolution'></a>Evolution of Clients: </h4><br>", sep="")
@@ -1040,7 +1041,7 @@ generateReport <- function(reportData, qm, numTab) {
                                   maxrange <- qm$staclients + qm$nclients
                                 summarySimple(qm, 1, maxrange, "Clients", depth=section$data$depth, nSimulation=section$data$nsim)
                                 ggsave(outfile, width=11, height=6.5, dpi=75)
-                                rep.body <- paste(rep.body, "<center>", base64::img(outfile), "</center>", sep="")                  
+                                rep.body <- paste(rep.body,  base64::img(outfile),  sep="")                  
                 },
                 "IntensityEvolution" = {
                                 rep.body <- paste(rep.body, "<h4><a name='", reportData$title, "-", reportData$nReports, "-intensityevolution'></a>Evolution of Intensity: </h4><br>", sep="")
@@ -1052,7 +1053,7 @@ generateReport <- function(reportData, qm, numTab) {
                                   maxrange <- qm$staclients + qm$nclients
                                 summarySimple(qm, 1, maxrange, "Intensity", depth=section$data$depth, nSimulation=section$data$nsim)
                                 ggsave(outfile, width=11, height=6.5, dpi=75)
-                                rep.body <- paste(rep.body, "<center>", base64::img(outfile), "</center>", sep="")                  
+                                rep.body <- paste(rep.body, base64::img(outfile),  sep="")                  
                 }
       )
 #     R2HTML::HTML("</ul>", file=menu)
@@ -1503,6 +1504,7 @@ loadUIModel.SimulatedModel <- function(model, session, input, output, parameters
                                     "maxrange <- values$qm[[1]]$staclients + values$qm[[1]]$nclients\n",
                                 "else\n",
                                     "maxrange <- values$qm$staclients + values$qm$nclients\n",
+                                "print(input$depth", numTab, ")\n",
                                 "summarySimple(values$qm, 1, maxrange, selected, depth=input$depth", numTab, ", nSimulation=sim)\n",
                                 "ggsave(outfile, width=11, height=6.5, dpi=100)\n",
                               "})\n",
@@ -1590,6 +1592,8 @@ loadUIModel.Open <- function(model, session, input, output, parameters=NULL) {
                           "if (is.null(values$qm) && buttonvalue> 0) stop(values$error)\n",
                           "isolate({\n",
                              "qm <- combineSimulations(values$qm)\n",
+                             "arrivals <- sapply(qm$arrivalDistribution, distrToText)\n",
+                             "print(arrivals)\n",
                              "res <- list(type='Open', arrivaldistr=sapply(qm$arrivalDistribution, distrToText),
                                                        servicedistr=sapply(qm$serviceDistribution, distrToText), 
                                                        s=qm$s, p=qm$prob,

@@ -8,8 +8,8 @@
   ..$ id  : num 1
   ..$ name: chr "M/M/1"
   ..$ fun :function (lambda = 3, mu = 6)  
-  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 17 10 36 1 10 1 1321 1340
-  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000a52c778> 
+  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 19 10 38 1 10 1 1445 1464
+  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000a5c84d0> 
   ..$ args:List of 2
   .. ..$ :List of 2
   .. .. ..$ label: chr "Arrival rate"
@@ -22,8 +22,8 @@
   ..$ id  : num 2
   ..$ name: chr "M/M/s"
   ..$ fun :function (lambda = 3, mu = 6, s = 2)  
-  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 94 10 123 1 10 1 1398 1427
-  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000a52c778> 
+  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 110 10 139 1 10 1 1536 1565
+  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000a5c84d0> 
   ..$ args:List of 3
   .. ..$ :List of 2
   .. .. ..$ label: chr "Arrival rate"
@@ -39,8 +39,8 @@
   ..$ id  : num 3
   ..$ name: chr "M/M/1/K"
   ..$ fun :function (lambda = 3, mu = 6, k = 2)  
-  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 194 12 222 1 12 1 1498 1526
-  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000a52c778> 
+  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 224 12 252 1 12 1 1650 1678
+  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000a5c84d0> 
   ..$ args:List of 3
   .. ..$ :List of 2
   .. .. ..$ label: chr "Arrival rate"
@@ -56,8 +56,8 @@
   ..$ id  : num 4
   ..$ name: chr "M/M/s/K"
   ..$ fun :function (lambda = 3, mu = 6, s = 2, k = 3)  
-  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 326 12 367 1 12 1 1630 1671
-  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000a52c778> 
+  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 376 12 417 1 12 1 1802 1843
+  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000a5c84d0> 
   ..$ args:List of 4
   .. ..$ :List of 2
   .. .. ..$ label: chr "Arrival rate"
@@ -76,8 +76,8 @@
   ..$ id  : num 5
   ..$ name: chr "M/M/1/INF/H"
   ..$ fun :function (lambda = 3, mu = 6, h = 5)  
-  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 20 16 49 1 16 1 22 51
-  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000a513390> 
+  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 22 16 51 1 16 1 24 53
+  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000a4c10f8> 
   ..$ args:List of 3
   .. ..$ :List of 2
   .. .. ..$ label: chr "Arrival rate"
@@ -93,8 +93,8 @@
   ..$ id  : num 6
   ..$ name: chr "M/M/s/INF/H"
   ..$ fun :function (lambda = 3, mu = 6, s = 3, h = 5)  
-  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 130 16 160 1 16 1 132 162
-  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000a513390> 
+  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 152 16 182 1 16 1 154 184
+  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000a4c10f8> 
   ..$ args:List of 4
   .. ..$ :List of 2
   .. .. ..$ label: chr "Arrival rate"
@@ -113,8 +113,8 @@
   ..$ id  : num 7
   ..$ name: chr "M/M/s/INF/H with Y replacements"
   ..$ fun :function (lambda = 3, mu = 6, s = 3, h = 5, y = 3)  
-  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 271 18 313 1 18 1 273 315
-  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000a513390> 
+  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 313 18 355 1 18 1 315 357
+  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000a4c10f8> 
   ..$ args:List of 5
   .. ..$ :List of 2
   .. .. ..$ label: chr "Arrival rate"
@@ -136,8 +136,8 @@
   ..$ id  : num 8
   ..$ name: chr "M/M/INF"
   ..$ fun :function (lambda = 3, mu = 6)  
-  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 400 12 416 1 12 1 402 418
-  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000a513390> 
+  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 462 12 478 1 12 1 464 480
+  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000a4c10f8> 
   ..$ args:List of 2
   .. ..$ :List of 2
   .. .. ..$ label: chr "Arrival rate"
@@ -151,8 +151,8 @@
   ..$ name: chr "Open Jackson Network"
   ..$ fun :function (lambda = c(20, 30), mu = c(100, 25), s = c(1, 2), p = matrix(c(0.2, 
     0.25, 0.1, 0), nrow = 2, ncol = 2))  
-  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 37 23 81 1 23 1 1001 1045
-  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000a44ead0> 
+  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 39 23 88 1 23 1 1093 1142
+  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000a39b290> 
   ..$ args:List of 4
   .. ..$ :List of 2
   .. .. ..$ label: chr "Arrival rate at each node"
@@ -173,8 +173,8 @@
   ..$ fun :function (mu = c(5, 5, 10, 15), s = c(2, 2, 1, 1), p = array(c(0.25, 0.15, 
     0.5, 0.4, 0.15, 0.35, 0.25, 0.3, 0.2, 0.2, 0.15, 0.25, 0.4, 0.3, 0.1, 
     0.05), dim = c(4, 4)), n = 10)  
-  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 224 25 291 1 25 1 1188 1255
-  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000a44ead0> 
+  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 232 25 311 1 25 1 1286 1365
+  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000a39b290> 
   ..$ args:List of 4
   .. ..$ :List of 2
   .. .. ..$ label: chr "Service rate at each node"
@@ -194,8 +194,8 @@
   ..$ name: chr "G/G/1"
   ..$ fun :function (arrivalDistribution = Exp(3), serviceDistribution = Exp(6), staClients = 100, 
     nClients = 1000, historic = FALSE, nsim = 10, nproc = 1)  
-  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 83 10 244 1 10 1 1856 2017
-  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000ad3a770> 
+  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 89 10 254 1 10 1 2052 2217
+  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x0000000009dd5b28> 
   ..$ args:List of 7
   .. ..$ :List of 2
   .. .. ..$ label: chr "Arrival distribution"
@@ -224,8 +224,8 @@
   ..$ name: chr "G/G/s"
   ..$ fun :function (arrivalDistribution = Exp(3), serviceDistribution = Exp(6), s = 2, 
     staClients = 100, nClients = 1000, historic = FALSE, nsim = 10, nproc = 1)  
-  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 269 10 453 1 10 1 2042 2226
-  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000ad3a770> 
+  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 283 10 471 1 10 1 2246 2434
+  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x0000000009dd5b28> 
   ..$ args:List of 8
   .. ..$ :List of 2
   .. .. ..$ label: chr "Arrival distribution"
@@ -257,8 +257,8 @@
   ..$ name: chr "G/G/1/K"
   ..$ fun :function (arrivalDistribution = Exp(3), serviceDistribution = Exp(6), K = 2, 
     staClients = 100, nClients = 1000, historic = FALSE, nsim = 10, nproc = 1)  
-  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 478 12 639 1 12 1 2251 2412
-  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000ad3a770> 
+  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 500 12 665 1 12 1 2463 2628
+  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x0000000009dd5b28> 
   ..$ args:List of 8
   .. ..$ :List of 2
   .. .. ..$ label: chr "Arrival distribution"
@@ -291,8 +291,8 @@
   ..$ fun :function (arrivalDistribution = Exp(3), serviceDistribution = Exp(6), s = 2, 
     K = 3, staClients = 100, nClients = 1000, historic = FALSE, nsim = 10, 
     nproc = 1)  
-  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 665 12 842 1 12 1 2438 2615
-  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000ad3a770> 
+  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 695 12 876 1 12 1 2658 2839
+  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x0000000009dd5b28> 
   ..$ args:List of 9
   .. ..$ :List of 2
   .. .. ..$ label: chr "Arrival distribution"
@@ -327,8 +327,8 @@
   ..$ name: chr "G/G/1/INF/H"
   ..$ fun :function (arrivalDistribution = Exp(3), serviceDistribution = Exp(6), H = 5, 
     staClients = 100, nClients = 1000, historic = FALSE, nsim = 10, nproc = 1)  
-  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 868 16 1025 1 16 1 2641 2798
-  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000ad3a770> 
+  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 906 16 1067 1 16 1 2869 3030
+  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x0000000009dd5b28> 
   ..$ args:List of 8
   .. ..$ :List of 2
   .. .. ..$ label: chr "Arrival distribution"
@@ -361,8 +361,8 @@
   ..$ fun :function (arrivalDistribution = Exp(3), serviceDistribution = Exp(6), s = 3, 
     H = 5, staClients = 100, nClients = 1000, historic = FALSE, nsim = 10, 
     nproc = 1)  
-  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 1051 16 1237 1 16 1 2824 3010
-  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000ad3a770> 
+  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 1097 16 1287 1 16 1 3060 3250
+  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x0000000009dd5b28> 
   ..$ args:List of 9
   .. ..$ :List of 2
   .. .. ..$ label: chr "Arrival distribution"
@@ -398,8 +398,8 @@
   ..$ fun :function (arrivalDistribution = Exp(3), serviceDistribution = Exp(6), s = 3, 
     H = 5, Y = 3, staClients = 100, nClients = 1000, historic = FALSE, 
     nsim = 10, nproc = 1)  
-  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 1263 18 1470 1 18 1 3036 3243
-  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000ad3a770> 
+  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 1317 18 1528 1 18 1 3280 3491
+  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x0000000009dd5b28> 
   ..$ args:List of 10
   .. ..$ :List of 2
   .. .. ..$ label: chr "Arrival distribution"
@@ -437,8 +437,8 @@
   ..$ name: chr "G/G/INF"
   ..$ fun :function (arrivalDistribution = Exp(3), serviceDistribution = Exp(6), staClients = 100, 
     nClients = 1000, historic = FALSE, nsim = 10, nproc = 1)  
-  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 1493 12 1643 1 12 1 3266 3416
-  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000ad3a770> 
+  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 1555 12 1709 1 12 1 3518 3672
+  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x0000000009dd5b28> 
   ..$ args:List of 7
   .. ..$ :List of 2
   .. .. ..$ label: chr "Arrival distribution"
@@ -469,8 +469,8 @@
     Exp(25)), s = c(1, 2), p = matrix(c(0.2, 0.25, 0.1, 0), nrow = 2, ncol = 2), 
     staClients = 100, transitions = 1000, historic = FALSE, nsim = 10, 
     nproc = 1)  
-  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 1921 16 2228 1 16 1 3694 4001
-  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000ad3a770> 
+  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 2011 16 2322 1 16 1 3974 4285
+  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x0000000009dd5b28> 
   ..$ args:List of 9
   .. ..$ :List of 2
   .. .. ..$ label: chr "Arrival distribution at each node"
@@ -507,8 +507,8 @@
     2, 1, 1), p = array(c(0.25, 0.15, 0.5, 0.4, 0.15, 0.35, 0.25, 0.3, 
     0.2, 0.2, 0.15, 0.25, 0.4, 0.3, 0.1, 0.05), dim = c(4, 4)), staClients = 100, 
     nClients = 3, transitions = 1000, historic = FALSE, nsim = 10, nproc = 1)  
-  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 1678 18 1885 1 18 1 3451 3658
-  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x000000000ad3a770> 
+  .. ..- attr(*, "srcref")=Class 'srcref'  atomic [1:8] 1753 18 1965 1 18 1 3716 3928
+  .. .. .. ..- attr(*, "srcfile")=Classes 'srcfilealias', 'srcfile' <environment: 0x0000000009dd5b28> 
   ..$ args:List of 9
   .. ..$ :List of 2
   .. .. ..$ label: chr "Service distribution at each node"

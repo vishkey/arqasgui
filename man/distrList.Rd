@@ -3,43 +3,9 @@
 \name{distrList}
 \alias{distrList}
 \title{List of registered distributions to the UI}
-\format{\preformatted{List of 9
- $ Exp    :List of 3
-  ..$ id  : num 1
-  ..$ name: chr "Exponential"
-  ..$ fun :function (rate = 1)  
- $ Norm   :List of 3
-  ..$ id  : num 2
-  ..$ name: chr "Normal"
-  ..$ fun :function (mean = 0, sd = 1)  
- $ Weibull:List of 3
-  ..$ id  : num 3
-  ..$ name: chr "Weibull"
-  ..$ fun :function (shape = 1, scale = 1)  
- $ Unif   :List of 3
-  ..$ id  : num 4
-  ..$ name: chr "Uniform"
-  ..$ fun :function (Min = 0, Max = 1)  
- $ Chisq  :List of 3
-  ..$ id  : num 5
-  ..$ name: chr "Chi Square"
-  ..$ fun :function (df = 1, ncp = 0)  
- $ Lnorm  :List of 3
-  ..$ id  : num 6
-  ..$ name: chr "Log-Normal"
-  ..$ fun :function (meanlog = 0, sdlog = 1)  
- $ Gammad :List of 3
-  ..$ id  : num 7
-  ..$ name: chr "Gamma"
-  ..$ fun :function (shape = 1, scale = 1)  
- $ Dirac  :List of 3
-  ..$ id  : num 8
-  ..$ name: chr "Dirac"
-  ..$ fun :function (location = 0)  
- $        :List of 3
-  ..$ id  : num 9
-  ..$ name: chr "No Arrivals"
-  ..$ fun :function ()  
+\format{\preformatted{List of 2
+ $ get:function ()  
+ $ set:function (v)  
 }}
 \usage{
 distrList

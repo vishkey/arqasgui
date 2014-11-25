@@ -12,6 +12,9 @@ registerDistribution(fun, name, index = FALSE)
 
 \item{index}{Create a label in the list with the name of the distribution}
 }
+\value{
+the new value of distrList
+}
 \description{
 Register a distribution to the UI
 }
