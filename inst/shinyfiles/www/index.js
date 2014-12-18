@@ -24,6 +24,74 @@ $.fn.scrollTo = function( target, options, callback ){
   });
 }
 
+var myNumberInputBinding = new Shiny.InputBinding();
+$.extend(myNumberInputBinding, {
+    find: function(scope) {
+      return $(scope).find('.myNumberInputBinding');
+    },
+    getId: function(el) {
+      return Shiny.InputBinding.prototype.getId.call(this, el) || el.name;
+    },
+    getValue: function(el) {
+      var numberVal = $(el).val();
+      if (/^\s*$/.test(numberVal))  // Return null if all whitespace
+        return null;
+      else if (!isNaN(numberVal))   // If valid Javascript number string, coerce to number
+        return +numberVal;
+      else
+        return numberVal;           // If other string like "1e6", send it unchanged
+    },
+    setValue: function(el, value) {
+      el.value = value;
+    },
+    getType: function(el) {
+      return "shiny.number";
+    },
+    subscribe: function(el, callback) {
+      $(el).on('keyup.textInputBinding input.textInputBinding', function(event) {
+        callback(true);
+      });
+      $(el).on('change.textInputBinding', function(event) {
+        callback(true);
+      });
+    },
+    unsubscribe: function(el) {
+      $(el).off('.textInputBinding');
+    },
+    receiveMessage: function(el, data) {
+      console.log(data);
+      if (data.hasOwnProperty('attr') & data.hasOwnProperty('attrValue'))
+          $(el).attr(data.attr, data.attrValue);
+      if (data.hasOwnProperty('value'))  el.value = data.value;
+      if (data.hasOwnProperty('min'))    el.min   = data.min;
+      if (data.hasOwnProperty('max'))    el.max   = data.max;
+      if (data.hasOwnProperty('step'))   el.step  = data.step;
+
+      if (data.hasOwnProperty('label'))
+        $(el).parent().find('label[for="' + $escape(el.id) + '"]').text(data.label);
+
+      $(el).trigger('change');
+    },
+    getState: function(el) {
+      return { label: $(el).parent().find('label[for="' + $escape(el.id) + '"]').text(),
+               value: this.getValue(el),
+               min:   Number(el.min),
+               max:   Number(el.max),
+               step:  Number(el.step) };
+    },
+    getRatePolicy: function() {
+      return {
+        policy: 'debounce',
+        delay: 500
+      };
+    },
+    initialize: function(el) {
+      console.log($(el).attr("id"));
+    }
+});
+
+Shiny.inputBindings.register(myNumberInputBinding, 'shiny.myNumberInputBinding');
+
 var JQueryActionButtonInputBinding = new Shiny.InputBinding();
 $.extend(JQueryActionButtonInputBinding, {
 	find: function(scope) {
@@ -186,8 +254,8 @@ $.extend(JQuerySaveReportInputBinding, {
           case "WEvolution" : {data.depth = parseInt($("#depth" + numTab).val()); break;}
           case "WqEvolution": {data.depth = parseInt($("#depth" + numTab).val()); break;}
           case "ClientsEvolution": {data.depth = parseInt($("#depth" + numTab).val());
-                                    data.nsim = $("#simulationSelector" + numTab).attr("value"); break;}
-          case "IntensityEvolution": {data.depth = parseInt($("#depth" + numTab).val());}
+                                    data.nsim = parseInt($("#simulationInput" + numTab).val()); break;}
+          case "IntensityEvolution": {data.depth = parseInt($("#depth" + numTab).val()); break;}
           default: {data = null; break;}
 
         }
@@ -1636,21 +1704,21 @@ Shiny.inputBindings.register(graphInputBinding, 'shiny.graphInputBinding');*/
 			var $el = $(el);
 			$el.empty();
 			
-			var writeMenu = function(data) {
+			var writeMenu = function(data, level) {
 				var aux = "";
 				for(var i=0; i<data.length; i++) {
           if (data[i].behavior != undefined && data[i].behavior.type == "link") {
             aux += "<li><a href='" + data[i].behavior.link + "' target='_blank'>" + data[i].title + "</a>\n";
-          }
+                }
           else
             aux += "<li><a idMenu='"+ data[i].id +"' href='#'>" + data[i].title + "</a>\n";
-					if (data[i].submenu.length > 0)
-						aux += "<ul>" + writeMenu(data[i].submenu) + "</ul>\n";
-					aux += "</li>";
+  					if (data[i].submenu.length > 0)
+  						aux += "<ul>" + writeMenu(data[i].submenu, level+1) + "</ul>\n";
+  					aux += "</li>";
 				}
 				return aux;
 			};
-			$el.html(writeMenu(self.menu));
+			$el.html(writeMenu(self.menu, 0));
 			
 			$el.find("a[idMenu]").each(function() {
 				$(this).on("click", function(event) {
@@ -1692,7 +1760,7 @@ Shiny.inputBindings.register(graphInputBinding, 'shiny.graphInputBinding');*/
 		this.selected = 0;
 		this.clicked = 0;
 		$(el).empty();
-		$(el).menu();
+		$(el).menu({position: {at: "left bottom"}});
 	},
 	
 	_buildMenu: function(data) {
@@ -1992,42 +2060,25 @@ Shiny.inputBindings.register(graphInputBinding, 'shiny.graphInputBinding');*/
   Shiny.inputBindings.register(JqueryUIsliderInputBinding, 'shiny.JqueryUIsliderInput');
   
 $(window).on("resize", function(){
-        resizeColumns($("#results").find("[aria-expanded=true]").first());
+        //resizeColumns($("#results").find("[aria-expanded=true]").first());
 });
   
 function resizeColumns (scope) {
-  var desiredHeight = $("#menu").height();
+  var InputDataBoxAlone = $(scope).find(".InputDataBox[alone]").first();
   var InputDataBox = $(scope).find(".InputDataBox").first();
-  var InputHeight = InputDataBox.height();
-  var difference = desiredHeight-InputHeight-62;
-  if (difference != null) {
-    if(InputDataBox.is("[alone]")) {
-      InputDataBox.css("min-height", InputHeight);
-      InputDataBox.height(desiredHeight-30);
-    } else {
-      var ToolsBox = $(scope).find(".ToolsBox").first();
-      if ($(ToolsBox).attr("data-fixedHeight") == null) {
-        $(ToolsBox).css("min-height", $(ToolsBox).height()+20);
-        $(ToolsBox).attr("data-fixedHeight", "true");
-      }
-      $(ToolsBox).height(difference);
-      
-      if (InputHeight + $(ToolsBox).height() > desiredHeight)
-        $("#menu").height(InputHeight + $(ToolsBox).height());
-    }
-    
-    var ModelOutput = $(scope).find(".ModelOutputBox").first()
-    if ($(ModelOutput).attr("data-fixedHeight") === undefined) {
-        $(ModelOutput).css("min-height",  parseFloat($(ToolsBox).css("min-height"))+InputHeight+35);
-        $(ModelOutput).attr("data-fixedHeight", "true");
-    }
-    $(ModelOutput).height(desiredHeight-30);
-    
-    var ModelOutputTabs = $(ModelOutput).find(".ModelOutputTabs").first();
-    if ($(ModelOutputTabs).attr("data-fixedHeight") === undefined) {
-        $(ModelOutputTabs).css("min-height",  parseFloat($(ToolsBox).css("min-height"))+InputHeight-70);
-        $(ModelOutputTabs).attr("data-fixedHeight", "true");
-    }
-    $(ModelOutputTabs).height(desiredHeight-120);
+  var Toolbox = $(scope).find(".ToolsBox").first();
+  var ModelOutputBox = $(scope).find(".ModelOutputBox").first();
+  var ModelOutputTabs = $(scope).find(".ModelOutputTabs").first();
+  
+  if (InputDataBoxAlone.height() != null) {
+    InputDataBoxAlone.css("min-height", InputDataBoxAlone.height()*3);
+    ModelOutputTabs.css("min-height", InputDataBoxAlone.height()*0.8);
+    $("#results").css("min-height", InputDataBoxAlone.height()*1.1);
   }
+  
+  if (InputDataBox.height() != null & Toolbox.height() != null) {
+      ModelOutputBox.css("min-height", (InputDataBox.height()+Toolbox.height())*1.05);
+      $("#results").css("min-height", (InputDataBox.height()+Toolbox.height())*1.15);
+      ModelOutputTabs.css("min-height", (InputDataBox.height()+Toolbox.height())*0.9);
+  }  
 }

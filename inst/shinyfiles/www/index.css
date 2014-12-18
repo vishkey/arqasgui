@@ -1,27 +1,24 @@
 body {
 	font-size: 12px;
+	padding: 20px 20px 20px 15px;
 }
 
 #menu {
-	
-    height: -webkit-calc(99% - 55px);
-    height: -moz-calc(99%-55px);
-	width: 70%;
+	width: auto;
 	z-index: 1;
 }
 
 #results {
 	min-height: 99%;
-	left: -80px;
+	width: 100%;
     height:auto;
-	width: -webkit-calc(100% + 80px);
-	width: -moz-calc(100% + 80px);
 	z-index: 2;
 }	
 
 #menu > li > ul {
 	width: 110%;
-	z-index: 20;
+	overflow: visible !important;
+	z-index: 5;
 }
 
 #RowToolsBox {
@@ -67,7 +64,9 @@ body {
 }
 
 .logo {
-	margin: 13px 0px 13px 35px;
+	margin-bottom: 15px;
+	padding-top: 8px;
+	padding-left: 5px;
 	width:100px;	
 }
 
@@ -88,21 +87,44 @@ select {
 }
 
 
-@media (max-height: 800px) {
-      body{font-size: 10px;}
-      #results {
-        left: -30px;
-		width: -webkit-calc(105%);
-        width: -moz-calc(105%);
-      }
-      #menu {
-		min-height: -webkit-calc(99% - 55px);
-        min-height: -moz-calc(99% - 55px);
-        width: 90%;
-	      z-index: 1;
-      }
-      .logo {
-          margin: 13px 0px 13px 5px;
-        	width:100px;	
-       }
+.ui-menu { 
+font: 13px Arial;
+}
+.ui-menu .ui-menu {
+overflow: visible !important;
+}
+.ui-menu > li { 
+float: left;
+display: block;
+width: auto !important;
+}
+.ui-menu ul li {
+display:block;
+float:none;
+}
+.ui-menu ul li ul {
+left:120px !important;
+width:100%;
+}
+.ui-menu ul li ul li {
+width:auto;
+}
+.ui-menu ul li ul li a {
+float:left;
+}
+.ui-menu > li {
+margin: 5px 5px !important;
+padding: 0 0 !important;
+}
+.ui-menu > li > a { 
+float: left;
+display: block;
+clear: both;
+}
+.ui-menu .ui-menu-icon { 
+margin-top: 0.3em !important;
+}
+.ui-menu .ui-menu .ui-menu li { 
+float: left;
+display: block;
 }

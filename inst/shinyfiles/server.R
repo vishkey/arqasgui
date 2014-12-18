@@ -320,6 +320,20 @@ updateVectorInput <- function(session, inputId, label=NULL, value=NULL) {
 #' Sends a message to the HTML Shiny Matrix Input to update its fields
 #' @param session Session in the server
 #' @param inputId Id of the input to update
+#' @param min Minimum value permited
+#' @param max Maximum value permited
+#' @param value Actual value of the input
+#' @param step adfasdf
+#' @param attr Atribute to modify
+#' @param attrValue Value for the attribute to modify
+updateMyNumberInput <- function(session, inputId, min=NULL, max=NULL, value=NULL, step=NULL, attr=NULL, attrValue=NULL) {
+  message <- list(min=min, max=max, value=value, step=step, attr=attr, attrValue=attrValue)
+  session$sendInputMessage(inputId, message)
+}
+
+#' Sends a message to the HTML Shiny Matrix Input to update its fields
+#' @param session Session in the server
+#' @param inputId Id of the input to update
 #' @param value Value of the matrix
 #' @param size Number of colums or rows. Expect square matrix.
 updateMatrixInput <- function(session, inputId, value=NULL, size=NULL) {
@@ -434,7 +448,7 @@ generateToolbox.MarkovianModel <- function(input, model) {
                         "<input type='number' min='0' step='0.01' class='arqas-number-input' id='WtWqtStep", input$results$total,"' value='0.05'/><br>",
                     "</div>",
                    "<div id='WtWqtSlider", input$results$total, "' class='shiny-slider-input' range='true' min=0 max=2 step=0.05 values='[0, 0.5]'></div><br>",
-                   "<button id='CalculateButton", input$results$total, "' type='button' class='btn btn-primary shiny-jquerybutton-input'>Compute</button>",
+                   "<button id='CalculateButton", input$results$total, "' type='button' class='btn btn-primary shiny-jquerybutton-input'>Update</button>",
                    "<hr><br>",
                    "<div id='saveReport", input$results$total, "' class='shiny-savereport-input'></div>",
                "</fieldset></form>", sep=""))
@@ -451,7 +465,7 @@ generateToolbox.Network <- function(input, model) {
                "<input id='pn1nk", input$results$total, "' value=", vectortostring(1:length(defaultModel$servers)), " class='shiny-vector-input'/><br><br>\n",
                "<label for='PnSlider", input$results$total, "'><b> Pn</b><br><br> n from <input type='number' class='arqas-number-input'value='0' min='0' id='PnMin", input$results$total, "'></input> to <input type='number' class='arqas-number-input' value='5' min='0' id='PnMax", input$results$total,"'></input>:</label><br>",
                "<div id='PnSlider", input$results$total, "' class='shiny-slider-input' range='true' min=0 max=", maxSliderPn ," step=1 values='[0, 5]'></div><br>",
-               "<button id='CalculateButton", input$results$total, "' type='button' class='btn btn-primary shiny-jquerybutton-input'>Compute</button><br>",
+               "<button id='CalculateButton", input$results$total, "' type='button' class='btn btn-primary shiny-jquerybutton-input'>Update</button><br>",
                "<hr><br>",
                "<div id='saveReport", input$results$total, "' class='shiny-savereport-input'></div>",
                sep="")
@@ -480,7 +494,7 @@ generateToolbox.SimulatedModel <- function(input, model) {
   return(tagList(tags$label("for"=paste("depth", input$results$total, sep=""), "Number of points (depth): "), 
                  tags$input(id=paste("depth", input$results$total, sep=""), value=100, class="shiny-numeric-input", type="number"),
                  tags$br(), tags$br(),
-                 tags$button(id=paste("CalculateButton", input$results$total, sep=""), class="btn btn-primary shiny-jquerybutton-input", "Compute"),
+                 tags$button(id=paste("CalculateButton", input$results$total, sep=""), class="btn btn-primary shiny-jquerybutton-input", "Update"),
                  tags$hr(), tags$br(),
                  tags$div(id=paste("saveReport", input$results$total, sep=""), class='shiny-savereport-input')
          ))
@@ -569,7 +583,7 @@ generatePanel.Report <- function(session, input, model, parameters) {
           "</div>",
           "</div>",
           "<div class='col-md-9 main'>",
-          "<div id='ModelOutputBox", input$results$total, "' class='ModelOutputBox ui-widget-content ui-corner-all' style='overflow:scroll;'>",
+          "<div id='ModelOutputBox", input$results$total, "' class='ModelOutputBox ui-widget-content ui-corner-all' style='height:90%; overflow:scroll;'>",
           "<span id='reportBodyOutput", input$results$total, "' class='shiny-reportbody-output'></span>",
           "</div>",
           "</div>",
@@ -929,7 +943,7 @@ generateReport <- function(reportData, qm, numTab) {
 #                                      R2HTML::HTML(paste("<li><a href='report_main.html#", reportData$title, "-waitingplots' target='main'>Waiting Plots</a></li>", sep=""), file=menu)
                                       outfile <- tempfile(fileext='.png')
                                       summaryWtWqt(qm, seq(section$data$from, section$data$to, by=section$data$step))
-                                      ggsave(outfile, width=11, height=6.5, dpi=75)
+                                      ggplot2::ggsave(outfile, width=11, height=6.5, dpi=75)
                                       rep.body <- paste(rep.body, base64::img(outfile), sep="")
 #                                     R2HTML::HTML(paste("<center><img src='./plots/", basename(outfile), "'></img></center>", sep=""), file=target)
                                     },
@@ -940,7 +954,7 @@ generateReport <- function(reportData, qm, numTab) {
 #                                          R2HTML::HTML(paste("<li><a href='report_main.html#", reportData$title, "-probabilitiesplot' target='main'>Probabilities Plot</a></li>", sep=""), file=menu)
                                          outfile <- tempfile(fileext='.png')
                                          summaryPnQn(qm, seq(section$data$from, section$data$to, 1))
-                                         ggsave(outfile, width=11, height=6.5, dpi=75)
+                                         ggplot2::ggsave(outfile, width=11, height=6.5, dpi=75)
                                          rep.body <- paste(rep.body, base64::img(outfile), sep="")
 #                                         R2HTML::HTML(paste("<center><img src='./plots/", basename(outfile), "' alt='test'></img></center>", sep=""), file=target)
                                         },
@@ -983,7 +997,7 @@ generateReport <- function(reportData, qm, numTab) {
                                  else
                                       maxrange <- qm$staclients + qm$nclients
                                  summarySimple(qm, 1, maxrange, "L", depth=section$data$depth, nSimulation=section$data$nsim)
-                                 ggsave(outfile, width=11, height=6.5, dpi=75)
+                                 ggplot2::ggsave(outfile, width=11, height=6.5, dpi=75)
                                  rep.body <- paste(rep.body,  base64::img(outfile),  sep="")
                 },
                 "LqEvolution" = {
@@ -998,7 +1012,7 @@ generateReport <- function(reportData, qm, numTab) {
                                   else
                                     maxrange <- qm$staclients + qm$nclients
                                   summarySimple(qm, 1, maxrange, "Lq", depth=section$data$depth, nSimulation=section$data$nsim)
-                                  ggsave(outfile, width=11, height=6.5, dpi=75)
+                                  ggplot2::ggsave(outfile, width=11, height=6.5, dpi=75)
                                   rep.body <- paste(rep.body,  base64::img(outfile), sep="")                  
                 },
                 "WEvolution" = {
@@ -1013,7 +1027,7 @@ generateReport <- function(reportData, qm, numTab) {
                                 else
                                   maxrange <- qm$staclients + qm$nclients
                                 summarySimple(qm, 1, maxrange, "W", depth=section$data$depth, nSimulation=section$data$nsim)
-                                ggsave(outfile, width=11, height=6.5, dpi=75)
+                                ggplot2::ggsave(outfile, width=11, height=6.5, dpi=75)
                                 rep.body <- paste(rep.body,  base64::img(outfile), sep="")                  
                 },
                 "WqEvolution" = {
@@ -1028,7 +1042,7 @@ generateReport <- function(reportData, qm, numTab) {
                                 else
                                   maxrange <- qm$staclients + qm$nclients
                                 summarySimple(qm, 1, maxrange, "Wq", depth=section$data$depth, nSimulation=section$data$nsim)
-                                ggsave(outfile, width=11, height=6.5, dpi=75)
+                                ggplot2::ggsave(outfile, width=11, height=6.5, dpi=75)
                                 rep.body <- paste(rep.body,  base64::img(outfile),  sep="")                  
                 },
                 "ClientsEvolution" = {
@@ -1039,8 +1053,9 @@ generateReport <- function(reportData, qm, numTab) {
                                   maxrange <- qm[[1]]$staclients + qm[[1]]$nclients
                                 else
                                   maxrange <- qm$staclients + qm$nclients
+                                print(section$data$nsim)
                                 summarySimple(qm, 1, maxrange, "Clients", depth=section$data$depth, nSimulation=section$data$nsim)
-                                ggsave(outfile, width=11, height=6.5, dpi=75)
+                                ggplot2::ggsave(outfile, width=11, height=6.5, dpi=75)
                                 rep.body <- paste(rep.body,  base64::img(outfile),  sep="")                  
                 },
                 "IntensityEvolution" = {
@@ -1052,7 +1067,7 @@ generateReport <- function(reportData, qm, numTab) {
                                 else
                                   maxrange <- qm$staclients + qm$nclients
                                 summarySimple(qm, 1, maxrange, "Intensity", depth=section$data$depth, nSimulation=section$data$nsim)
-                                ggsave(outfile, width=11, height=6.5, dpi=75)
+                                ggplot2::ggsave(outfile, width=11, height=6.5, dpi=75)
                                 rep.body <- paste(rep.body, base64::img(outfile),  sep="")                  
                 }
       )
@@ -1122,7 +1137,7 @@ loadUIModel.MarkovianModel <- function(model, session, input, output, parameters
                                                          "pnqnrange <- range(input$PnQnMin", numTab, ", input$PnQnMax", numTab, ")\n",
                                                      "})\n", 
                                                      "summaryPnQn(values$qm, seq(pnqnrange[1], pnqnrange[2], 1))\n",
-                                                     "ggsave(outfile, width=11, height=6.5, dpi=100)\n",
+                                                     "ggplot2::ggsave(outfile, width=11, height=6.5, dpi=100)\n",
                                                      "title <- 'Pn: Steady-state probability of having n customers in the system.\n'\n",
                                                      "try({Qn(values$qm, 0); title <- paste(title, 'Qn: Steady-state probability of finding n customers in the system when a new customer arrives.', sep='')})\n",
                                                      "list(src=outfile, alt='Loading plot...', title=title)}, deleteFile=TRUE)\n",
@@ -1133,7 +1148,7 @@ loadUIModel.MarkovianModel <- function(model, session, input, output, parameters
                                                       "wtwqtrange <- range(input$WtWqtMin", numTab, ", input$WtWqtMax", numTab, ")\n",
                                                       "summaryWtWqt(values$qm, seq(wtwqtrange[1], wtwqtrange[2], by=input$WtWqtStep", numTab, "))\n",
                                                     "})\n", 
-                                                    "ggsave(outfile, width=11, height=6.5, dpi=100)\n",
+                                                    "ggplot2::ggsave(outfile, width=11, height=6.5, dpi=100)\n",
                                                     "list(src=outfile, alt='Loading plot...', title='W: Distribution function of the waiting time in the system.\nWq: Distribution function of the waiting time in the queue.')}, deleteFile=TRUE)\n",
       "output$error", numTab, "<- renderUI({\n",
                                         "if (is.null(values$qm)) stop(values$error)\n",
@@ -1424,7 +1439,8 @@ loadUIModel.ClosedJackson <- function(model, session, input, output, parameters=
 loadUIModel.SimulatedModel <- function(model, session, input, output, parameters=NULL) {
   numTab <- input$results$total
   updateTabInput(session, "results", list("add"),  list(newTab(model$name, generatePanel(session, input, model, parameters))), removeButton=TRUE)
-  eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Convergence', '", selectInput(inputId=paste("convergenceSelector", input$results$total, sep=""), label=tags$b("Select a variable:"), choices=c("L"="L", "Lq"="Lq", "W"="W", "Wq"="Wq", "Clients"="Clients", "Intensity" = "Intensity")),selectInput(inputId=paste("simulationSelector", input$results$total, sep=""), label="", choices=c("---"=0)) ,"<div id=\"errorConvergence", numTab, "\" class=\"shiny-html-output\"></div><div id=\"convergenceDiv", numTab, "\" class=\"shiny-image-output\"></div>')))\n", sep="")))
+  eval(parse(text=paste("nsim <- input$nsim", numTab, sep="")))
+  eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Convergence', '", selectInput(inputId=paste("convergenceSelector", input$results$total, sep=""), label=tags$b("Select a variable:"), choices=c("L"="L", "Lq"="Lq", "W"="W", "Wq"="Wq", "Clients"="Clients", "Intensity" = "Intensity")),"<input id=\"simulationInput", numTab, "\" class=\"myNumberInputBinding\" type=\"number\" value=1 min=1 max=", nsim," ></input><div id=\"errorConvergence", numTab, "\" class=\"shiny-html-output\"></div><div id=\"convergenceDiv", numTab, "\" class=\"shiny-image-output\"></div>')))\n", sep="")))
   eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Summary', '<div id=\"summaryDatatable", numTab, "\" class=\"shiny-mydatatable-output\"></div>')))\n", sep="")))
   updateSaveReportInput(session, paste('saveReport', numTab, sep=""), disable=TRUE)
   updateSelectDistrInput(session=session, inputId=paste("arrivalDistribution", numTab, sep=""), distributions=selectDistr(WithNoArrivals=FALSE))
@@ -1479,10 +1495,11 @@ loadUIModel.SimulatedModel <- function(model, session, input, output, parameters
                         "observe({\n",
                             "if (!is.null(selected <- input$convergenceSelector", numTab, ")) {\n",
                                 "isolate({\n",
-                                    "if (selected == 'Clients')",
-                                        "updateSelectInput(session, 'simulationSelector",numTab,"', choices=1:length(values$qm))\n",  
+                                    "if (selected == 'Clients'){\n",
+                                        "updateMyNumberInput(session, 'simulationInput",numTab,"', attr='style', attrValue='visibility:visible;', min=1, max=input$nsim", numTab, ", value=input$simulationInput", numTab, ")\n",
+                                    "}\n",
                                     "else\n",
-                                        "updateSelectInput(session, 'simulationSelector", numTab, "', choices=c('----'))\n",
+                                        "updateMyNumberInput(session, 'simulationInput", numTab, "', attr='style', attrValue='visibility:hidden;', value=input$simulationInput", numTab, ")\n",
                                 "})\n",
                             "}\n",
                         "})\n",
@@ -1497,15 +1514,19 @@ loadUIModel.SimulatedModel <- function(model, session, input, output, parameters
                               "if (is.null(values$qm)) stop()\n",
                               "input$CalculateButton", numTab, "\n",
                               "selected <- input$convergenceSelector", numTab, "\n",
-                              "sim <- input$simulationSelector", numTab, "\n",
+                              "input$simulationInput", numTab, "\n",
                               "outfile <- tempfile(fileext='.svg')\n",
                               "isolate({\n",
+                                "print(input$depth", numTab, ")\n",
                                 "if(class(values$qm)[1] == 'list')\n",
                                     "maxrange <- values$qm[[1]]$staclients + values$qm[[1]]$nclients\n",
                                 "else\n",
                                     "maxrange <- values$qm$staclients + values$qm$nclients\n",
-                                "summarySimple(values$qm, 1, maxrange, selected, depth=input$depth", numTab, ", nSimulation=sim)\n",
-                                "ggsave(outfile, width=11, height=6.5, dpi=100)\n",
+                                "if (selected == 'Clients')\n",
+                                    "summarySimple(values$qm, 1, maxrange, selected, depth=input$depth", numTab, ", nSimulation=input$simulationInput", numTab, ")\n",
+                                "else\n",
+                                    "summarySimple(values$qm, 1, maxrange, selected, depth=input$depth", numTab, ")\n",
+                                "ggplot2::ggsave(outfile, width=11, height=6.5, dpi=100)\n",
                               "})\n",
                               "list(src=outfile, alt='Loading plot...', title='')
                         }, deleteFile=TRUE)\n", sep="")))
@@ -1606,8 +1627,8 @@ loadUIModel.Open <- function(model, session, input, output, parameters=NULL) {
                           "selected <- input$convergenceSelector", numTab, "\n",
                           "outfile <- tempfile(fileext='.svg')\n",
                           "isolate({\n",
-                            "summarySimple(values$qm, 1, (values$qm[[1]]$staclients + values$qm[[1]]$transitions), selected, depth=input$depth", numTab, ", nSimulation=input$simulationSelector", numTab, ")\n",
-                            "ggsave(outfile, width=11, height=6.5, dpi=100)\n",
+                            "summarySimple(values$qm, 1, (values$qm[[1]]$staclients + values$qm[[1]]$transitions), selected, depth=input$depth", numTab, ", nSimulation=input$simulationInput", numTab, ")\n",
+                            "ggplot2::ggsave(outfile, width=11, height=6.5, dpi=100)\n",
                           "})\n",
                           "list(src=outfile, alt='Loading plot...', title='')
                         }, deleteFile=TRUE)\n",
@@ -1707,7 +1728,7 @@ loadUIModel.Closed <- function(model, session, input, output, parameters=NULL) {
                           "outfile <- tempfile(fileext='.svg')\n",
                           "isolate({\n",
                             "summarySimple(values$qm, 1, (values$qm[[1]]$staclients + values$qm[[1]]$transitions), selected, depth=input$depth", numTab, ")\n",
-                            "ggsave(outfile, width=11, height=6.5, dpi=100)\n",
+                            "ggplot2::ggsave(outfile, width=11, height=6.5, dpi=100)\n",
                           "})\n",
                           "list(src=outfile, alt='Loading plot...', title='')
                         }, deleteFile=TRUE)\n", 
@@ -1776,21 +1797,21 @@ loadUIModel.DataAnalysis <- function(model, session, input, output) {
                             "if (is.null(values$fit)) stop(values$error)\n",
                             "outfile <- tempfile(fileext='.svg')\n",
                             "cdfcompggplot2(values$fit)\n",
-                            "ggsave(outfile, width=11, height=6.5, dpi=100)\n",
+                            "ggplot2::ggsave(outfile, width=11, height=6.5, dpi=100)\n",
                             "list(src=outfile, alt='Loading plot...', title='')
                         }, deleteFile=TRUE)\n", 
                         "output$histogramDiv", numTab, "<- renderImage({\n",
                           "if (is.null(values$fit)) stop(values$error)\n",
                           "outfile <- tempfile(fileext='.svg')\n",
                           "denscompggplot2(values$fit)\n",
-                          "ggsave(outfile, width=11, height=6.5, dpi=100)\n",
+                          "ggplot2::ggsave(outfile, width=11, height=6.5, dpi=100)\n",
                           "list(src=outfile, alt='Loading plot...', title='')
                         }, deleteFile=TRUE)\n", 
                         "output$qqDiv", numTab, "<- renderImage({\n",
                           "if (is.null(values$fit)) stop(values$error)\n",
                           "outfile <- tempfile(fileext='.svg')\n",
                           "qqcompggplot2(values$fit)\n",
-                          "ggsave(outfile, width=11, height=6.5, dpi=100)\n",
+                          "ggplot2::ggsave(outfile, width=11, height=6.5, dpi=100)\n",
                           "list(src=outfile, alt='Loading plot...', title='')
                         }, deleteFile=TRUE)\n", 
                         "observe({\n",
@@ -1873,12 +1894,6 @@ shinyServer(function(input, output, session) {
                   loadUIModel(reportModel, session, input, output)
                 else
                   loadUIModel(uiList[[id]], session, input, output)
-                
-#                  switch(as.character(input$menu$selected),
-#                         "0" = NULL, 
-#                         loadUIModel(uiList[[id]], session, input, output),
-#                         "21" = loadUIModel(dataAnalysisModel, session, input, output)
-#                  )
         })
       }
     })
