@@ -1,3 +1,7 @@
+require(base64)
+require(shiny)
+require(arqas)
+
 toDatatable <- function(qm, ...) {UseMethod("toDatatable", qm)}
 
 toDatatable.MarkovianModel <- function(qm) {
@@ -996,7 +1000,7 @@ generateReport <- function(reportData, qm, numTab) {
                                         maxrange <- qm[[1]]$staclients + qm[[1]]$nclients
                                  else
                                       maxrange <- qm$staclients + qm$nclients
-                                 summarySimple(qm, 1, maxrange, "L", depth=section$data$depth, nSimulation=section$data$nsim)
+                                 plot(qm, 1, maxrange, "L", depth=section$data$depth, nSimulation=section$data$nsim)
                                  ggplot2::ggsave(outfile, width=11, height=6.5, dpi=75)
                                  rep.body <- paste(rep.body,  base64::img(outfile),  sep="")
                 },
@@ -1011,7 +1015,7 @@ generateReport <- function(reportData, qm, numTab) {
                                       maxrange <- qm[[1]]$staclients + qm[[1]]$nclients
                                   else
                                     maxrange <- qm$staclients + qm$nclients
-                                  summarySimple(qm, 1, maxrange, "Lq", depth=section$data$depth, nSimulation=section$data$nsim)
+                                  plot(qm, 1, maxrange, "Lq", depth=section$data$depth, nSimulation=section$data$nsim)
                                   ggplot2::ggsave(outfile, width=11, height=6.5, dpi=75)
                                   rep.body <- paste(rep.body,  base64::img(outfile), sep="")                  
                 },
@@ -1026,7 +1030,7 @@ generateReport <- function(reportData, qm, numTab) {
                                     maxrange <- qm[[1]]$staclients + qm[[1]]$nclients
                                 else
                                   maxrange <- qm$staclients + qm$nclients
-                                summarySimple(qm, 1, maxrange, "W", depth=section$data$depth, nSimulation=section$data$nsim)
+                                plot(qm, 1, maxrange, "W", depth=section$data$depth, nSimulation=section$data$nsim)
                                 ggplot2::ggsave(outfile, width=11, height=6.5, dpi=75)
                                 rep.body <- paste(rep.body,  base64::img(outfile), sep="")                  
                 },
@@ -1041,7 +1045,7 @@ generateReport <- function(reportData, qm, numTab) {
                                   maxrange <- qm[[1]]$staclients + qm[[1]]$nclients
                                 else
                                   maxrange <- qm$staclients + qm$nclients
-                                summarySimple(qm, 1, maxrange, "Wq", depth=section$data$depth, nSimulation=section$data$nsim)
+                                plot(qm, 1, maxrange, "Wq", depth=section$data$depth, nSimulation=section$data$nsim)
                                 ggplot2::ggsave(outfile, width=11, height=6.5, dpi=75)
                                 rep.body <- paste(rep.body,  base64::img(outfile),  sep="")                  
                 },
@@ -1054,7 +1058,7 @@ generateReport <- function(reportData, qm, numTab) {
                                 else
                                   maxrange <- qm$staclients + qm$nclients
                                 print(section$data$nsim)
-                                summarySimple(qm, 1, maxrange, "Clients", depth=section$data$depth, nSimulation=section$data$nsim)
+                                plot(qm, 1, maxrange, "Clients", depth=section$data$depth, nSimulation=section$data$nsim)
                                 ggplot2::ggsave(outfile, width=11, height=6.5, dpi=75)
                                 rep.body <- paste(rep.body,  base64::img(outfile),  sep="")                  
                 },
@@ -1066,7 +1070,7 @@ generateReport <- function(reportData, qm, numTab) {
                                   maxrange <- qm[[1]]$staclients + qm[[1]]$nclients
                                 else
                                   maxrange <- qm$staclients + qm$nclients
-                                summarySimple(qm, 1, maxrange, "Intensity", depth=section$data$depth, nSimulation=section$data$nsim)
+                                plot(qm, 1, maxrange, "Intensity", depth=section$data$depth, nSimulation=section$data$nsim)
                                 ggplot2::ggsave(outfile, width=11, height=6.5, dpi=75)
                                 rep.body <- paste(rep.body, base64::img(outfile),  sep="")                  
                 }
@@ -1158,20 +1162,20 @@ loadUIModel.MarkovianModel <- function(model, session, input, output, parameters
                                                               "isolate({\n",
                                                                   "toDatatable(values$qm)\n",
                                                               "})\n",
-                                                             "}, options=list(jQueryUI=TRUE, dom='rt', searching=FALSE, ordering=FALSE, noFooter=NULL, mainTitle=isolate({class(values$qm)[1]})))\n",
+                                                             "},escape=FALSE, options=list(jQueryUI=TRUE, dom='rt', searching=FALSE, ordering=FALSE, noFooter=NULL, mainTitle=isolate({class(values$qm)[1]})))\n",
       "output$pnDatatable", numTab, "<- renderDataTable({input$CalculateButton", input$results$total, "\n",
                                                         "if (is.null(values$qm)) stop(values$error)\n",
                                                         "isolate({\n",
                                                             "datatablePnQn(values$qm, range(input$PnQnMin", numTab, ", input$PnQnMax", numTab, "))\n",
                                                         "})\n",
-                                        "}, options = list(jQueryUI=TRUE, searching=FALSE, ordering=FALSE, pagingType='full_numbers', pageLength=10, orderClasses = TRUE, noFooter=NULL))\n",
+                                        "}, escape=FALSE, options = list(jQueryUI=TRUE, searching=FALSE, ordering=FALSE, pagingType='full_numbers', pageLength=10, orderClasses = TRUE, noFooter=NULL))\n",
       
       "output$wtDatatable", numTab, "<- renderDataTable({input$CalculateButton", input$results$total, "\n",
                                                         "if (is.null(values$qm)) stop(values$error)\n",
                                                         "isolate({\n",
                                                            "datatableWtWqt(values$qm, range(input$WtWqtMin", numTab, ", input$WtWqtMax", numTab, "), input$WtWqtStep", numTab, ")\n",
                                                         "})\n",
-                                        "}, options = list(jQueryUI=TRUE, searching=FALSE, ordering=FALSE, searching=FALSE, pagingType='full_numbers', pageLength=10, orderClasses = TRUE, noFooter=NULL))\n",
+                                        "}, escape=FALSE, options = list(jQueryUI=TRUE, searching=FALSE, ordering=FALSE, searching=FALSE, pagingType='full_numbers', pageLength=10, orderClasses = TRUE, noFooter=NULL))\n",
       sep="")))
 }
 
@@ -1517,15 +1521,14 @@ loadUIModel.SimulatedModel <- function(model, session, input, output, parameters
                               "input$simulationInput", numTab, "\n",
                               "outfile <- tempfile(fileext='.svg')\n",
                               "isolate({\n",
-                                "print(input$depth", numTab, ")\n",
                                 "if(class(values$qm)[1] == 'list')\n",
                                     "maxrange <- values$qm[[1]]$staclients + values$qm[[1]]$nclients\n",
                                 "else\n",
                                     "maxrange <- values$qm$staclients + values$qm$nclients\n",
                                 "if (selected == 'Clients')\n",
-                                    "summarySimple(values$qm, 1, maxrange, selected, depth=input$depth", numTab, ", nSimulation=input$simulationInput", numTab, ")\n",
+                                    "plot(values$qm, 1, maxrange, selected, depth=input$depth", numTab, ", nSimulation=input$simulationInput", numTab, ")\n",
                                 "else\n",
-                                    "summarySimple(values$qm, 1, maxrange, selected, depth=input$depth", numTab, ")\n",
+                                    "plot(values$qm, 1, maxrange, selected, depth=input$depth", numTab, ")\n",
                                 "ggplot2::ggsave(outfile, width=11, height=6.5, dpi=100)\n",
                               "})\n",
                               "list(src=outfile, alt='Loading plot...', title='')
@@ -1615,8 +1618,8 @@ loadUIModel.Open <- function(model, session, input, output, parameters=NULL) {
                              "res <- list(type='Open', arrivaldistr=sapply(qm$arrivalDistribution, distrToText),
                                                        servicedistr=sapply(qm$serviceDistribution, distrToText), 
                                                        s=qm$s, p=qm$prob,
-                                                       l=if(!is.null(qm$out$l$mean)){qm$out$l$mean}else{qm$out$l}, lq=if(!is.null(qm$out$lq$mean)){qm$out$lq$mean}else{qm$out$lq}, 
-                                                       w=if(!is.null(qm$out$w$mean)){qm$out$w$mean}else{qm$out$w}, wq=if(!is.null(qm$out$wq$mean)){qm$out$wq$mean}else{qm$out$wq})\n",
+                                                       l=if(is.list(qm$out$l)){qm$out$l$mean}else{qm$out$l}, lq=if(is.list(qm$out$lq)){qm$out$lq$mean}else{qm$out$lq}, 
+                                                       w=if(is.list(qm$out$w)){qm$out$w$mean}else{qm$out$w}, wq=if(is.list(qm$out$wq)){qm$out$wq$mean}else{qm$out$wq})\n",
                            "})\n",
                            "res\n",
                          "})\n",
@@ -1627,7 +1630,7 @@ loadUIModel.Open <- function(model, session, input, output, parameters=NULL) {
                           "selected <- input$convergenceSelector", numTab, "\n",
                           "outfile <- tempfile(fileext='.svg')\n",
                           "isolate({\n",
-                            "summarySimple(values$qm, 1, (values$qm[[1]]$staclients + values$qm[[1]]$transitions), selected, depth=input$depth", numTab, ", nSimulation=input$simulationInput", numTab, ")\n",
+                            "plot(values$qm, 1, (values$qm[[1]]$staclients + values$qm[[1]]$transitions), selected, depth=input$depth", numTab, ", nSimulation=input$simulationInput", numTab, ")\n",
                             "ggplot2::ggsave(outfile, width=11, height=6.5, dpi=100)\n",
                           "})\n",
                           "list(src=outfile, alt='Loading plot...', title='')
@@ -1727,7 +1730,7 @@ loadUIModel.Closed <- function(model, session, input, output, parameters=NULL) {
                           "selected <- input$convergenceSelector", numTab, "\n",
                           "outfile <- tempfile(fileext='.svg')\n",
                           "isolate({\n",
-                            "summarySimple(values$qm, 1, (values$qm[[1]]$staclients + values$qm[[1]]$transitions), selected, depth=input$depth", numTab, ")\n",
+                            "plot(values$qm, 1, (values$qm[[1]]$staclients + values$qm[[1]]$transitions), selected, depth=input$depth", numTab, ")\n",
                             "ggplot2::ggsave(outfile, width=11, height=6.5, dpi=100)\n",
                           "})\n",
                           "list(src=outfile, alt='Loading plot...', title='')
@@ -1867,34 +1870,203 @@ tonumeric <- function(x) {
       a <- c(a, x[[i]])
     return(a)
 }
+
+#'Uncommment for Shinyapps
+#'
+
+#' Function to create a new list structure
+#' @export
+#' @keywords internal
+ListStructure <- function() {
+  value <- list()
+  
+  get <- function() {return(value)}
+  set <- function(v) {value <<- v}
+  
+  return(list(get=get, set=set))
+}
+
+#' List of export models to the UI
+#' @export
+#' @keywords internal
+uiList <- list()
+
+#' List of registered distributions to the UI
+#' @export
+#' @keywords internal
+distrList <- ListStructure()
+
+# The empty distribution gonna be always the last one.
+aux <- list()
+aux[[1]] <- list(id=1, name="No Arrivals", fun=function(){})
+
+distrList$set(aux)
+
+#' Counter of exported funtions
+#' @keywords internal
+exportedFunctions <- 0
+
+#' Exports a function to the UI
+#' 
+#' @param fun Function of the model
+#' @param name Name of the model
+#' @param args Type of each parameter of the function (numerical, character, vector, matrix)
+#' @param class A string to agrupate funtions in the same menu option
+#' @export
+exportToUI <- function(fun, name, args, class) {
+  exportedFunctions <<- exportedFunctions + 1
+  
+  el <- list(id=exportedFunctions, name=name, fun=fun, args=args)
+  oldClass(el) <- class
+  uiList[[exportedFunctions]] <<- el
+}
+
+#' Register a distribution to the UI
+#' 
+#' @param fun Function of the distribution
+#' @param name Name of the distribution
+#' @param index Create a label in the list with the name of the distribution
+#' @return the new value of distrList
+#' @export
+registerDistribution <- function(fun, name, index=FALSE) {
+  distrTemp <- distrList$get()
+  
+  registeredDistributions <- length(distrTemp) + 1
+  
+  emptyDistr <- distrTemp[[length(distrTemp)]]
+  el <- list(id=registeredDistributions-1, name=name, fun=fun)
+  
+  auxList <- distrTemp[-length(distrTemp)]
+  
+  if (index) {
+    auxList[[class(fun())[1]]] <- el
+  } else {
+    auxList[[registeredDistributions-1]] <- el
+  }
+  
+  distrList$set(c(auxList, list(list(id=registeredDistributions, name=emptyDistr$name, fun=emptyDistr$fun))))
+}
+
+#Register in the UI the default distributions
+registerDistribution(Exp, "Exponential", TRUE)
+registerDistribution(Norm, "Normal", TRUE) #sd > 0
+registerDistribution(Weibull, "Weibull", TRUE) 
+registerDistribution(Unif, "Uniform", TRUE)
+registerDistribution(Chisq, "Chi Square", TRUE)
+registerDistribution(Lnorm, "Log-Normal", TRUE)
+registerDistribution(Gammad, "Gamma", TRUE)
+registerDistribution(Dirac, "Dirac", TRUE)
+
+#Here you can register your own distributions
+#registerDistribution(function(mate=30){Exp(mate)}, "My Exponential")
+
+
+
+
+#' Create a list with the label and the type of the argument of the model
+#' 
+#' @param label Description of the argument
+#' @param type Type of the argument (numeric, boolean, vector, matrix, distr, vdistr)
+#' @export
+modelarg <- function(label, type) {list(label=label, type=type)}
+
+#Register in the UI the default queue models
+exportToUI(M_M_1, "M/M/1",
+           list(modelarg("Arrival rate", "numeric"), modelarg("Service rate", "numeric")),
+           c("M_M_1", "M_M_S", "MarkovianModel"))
+exportToUI(M_M_S, "M/M/s", 
+           list(modelarg("Arrival rate", "numeric"), modelarg("Service rate", "numeric"), modelarg("Servers", "numeric")),
+           c("M_M_S", "MarkovianModel"))
+exportToUI(M_M_1_K, "M/M/1/K",
+           list(modelarg("Arrival rate", "numeric"), modelarg("Service rate", "numeric"), modelarg("Queue size", "numeric")),
+           c("M_M_1_K", "M_M_S_K", "MarkovianModel"))
+exportToUI(M_M_S_K, "M/M/s/K",
+           list(modelarg("Arrival rate", "numeric"), modelarg("Service rate", "numeric"), modelarg("Servers", "numeric"), modelarg("Queue size", "numeric")),
+           c("M_M_S_K", "MarkovianModel"))
+exportToUI(M_M_1_INF_H, "M/M/1/INF/H",
+           list(modelarg("Arrival rate", "numeric"), modelarg("Service rate", "numeric"), modelarg("Potential population", "numeric")),
+           c("M_M_1_INF_H", "M_M_S_INF_H", "MarkovianModel"))
+exportToUI(M_M_S_INF_H, "M/M/s/INF/H",
+           list(modelarg("Arrival rate", "numeric"), modelarg("Service rate", "numeric"), modelarg("Servers", "numeric"), modelarg("Potential population", "numeric")),
+           c("M_M_S_INF_H", "MarkovianModel"))
+exportToUI(M_M_S_INF_H_Y, "M/M/s/INF/H with Y replacements",
+           list(modelarg("Arrival rate", "numeric"), modelarg("Service rate", "numeric"), modelarg("Servers", "numeric"), modelarg("Potential population", "numeric"), modelarg("Replacements", "numeric")),
+           c("M_M_S_INF_H_Y", "M_M_S_INF_H", "MarkovianModel"))
+exportToUI(M_M_INF, "M/M/INF", 
+           list(modelarg("Arrival rate", "numeric"), modelarg("Service rate", "numeric")),  c("M_M_INF", "MarkovianModel"))
+exportToUI(OpenJacksonNetwork, "Open Jackson Network", 
+           list(modelarg("Arrival rate at each node", "vector"), modelarg("Service rate at each node", "vector"), modelarg("Servers at each node", "vector"), modelarg("Transition matrix", "matrix")),
+           c("OpenJackson", "Network", "MarkovianModel"))
+exportToUI(ClosedJacksonNetwork, "Closed Jackson Network",
+           list(modelarg("Service rate at each node", "vector"), modelarg("Servers at each node", "vector"), modelarg("Transition matrix", "matrix"), modelarg("Number of customers", "numeric")),
+           c("ClosedJackson", "Network", "MarkovianModel"))
+
+exportToUI(G_G_1, "G/G/1",
+           list(modelarg("Arrival distribution", "distr"), modelarg("Service distribution", "distr"), modelarg("Stabilization parameter", "numeric"), modelarg("Simulation parameter", "numeric"), modelarg("Generate historic?", "boolean"), modelarg("Number of simulations", "numeric"), modelarg("Number of subprocesses", "numeric")),
+           c("G_G_1", "SimulatedModel"))
+exportToUI(G_G_S, "G/G/s",
+           list(modelarg("Arrival distribution", "distr"), modelarg("Service distribution", "distr"), modelarg("Servers", "numeric"), modelarg("Stabilization parameter", "numeric"), modelarg("Simulation parameter", "numeric"), modelarg("Generate historic?", "boolean"), modelarg("Number of simulations", "numeric"), modelarg("Number of subprocesses", "numeric")),
+           c("G_G_S", "SimulatedModel"))
+exportToUI(G_G_1_K, "G/G/1/K",
+           list(modelarg("Arrival distribution", "distr"), modelarg("Service distribution", "distr"), modelarg("Queue size", "numeric"), modelarg("Stabilization parameter", "numeric"), modelarg("Simulation parameter", "numeric"), modelarg("Generate historic?", "boolean"), modelarg("Number of simulations", "numeric"), modelarg("Number of subprocesses", "numeric")),
+           c("G_G_1_K", "SimulatedModel"))
+exportToUI(G_G_S_K, "G/G/s/K",
+           list(modelarg("Arrival distribution", "distr"), modelarg("Service distribution", "distr"), modelarg("Servers", "numeric"), modelarg("Queue size", "numeric"), modelarg("Stabilization parameter", "numeric"), modelarg("Simulation parameter", "numeric"), modelarg("Generate historic?", "boolean"), modelarg("Number of simulations", "numeric"), modelarg("Number of subprocesses", "numeric")),
+           c("G_G_S_K", "SimulatedModel"))
+exportToUI(G_G_1_INF_H, "G/G/1/INF/H",
+           list(modelarg("Arrival distribution", "distr"), modelarg("Service distribution", "distr"), modelarg("Potential customers", "numeric"), modelarg("Stabilization parameter", "numeric"), modelarg("Simulation parameter", "numeric"), modelarg("Generate historic?", "boolean"), modelarg("Number of simulations", "numeric"), modelarg("Number of subprocesses", "numeric")),
+           c("G_G_1_INF_H", "SimulatedModel"))
+exportToUI(G_G_S_INF_H, "G/G/s/INF/H",
+           list(modelarg("Arrival distribution", "distr"), modelarg("Service distribution", "distr"), modelarg("Servers", "numeric"), modelarg("Potential customers", "numeric"), modelarg("Stabilization parameter", "numeric"), modelarg("Simulation parameter", "numeric"), modelarg("Generate historic?", "boolean"), modelarg("Number of simulations", "numeric"), modelarg("Number of subprocesses", "numeric")),
+           c("G_G_S_INF_H", "SimulatedModel"))
+exportToUI(G_G_S_INF_H_Y, "G/G/s/INF/H with Y replacements",
+           list(modelarg("Arrival distribution", "distr"), modelarg("Service distribution", "distr"), modelarg("Servers", "numeric"), modelarg("Potential customers", "numeric"), modelarg("Replacements", "numeric"), modelarg("Stabilization parameter", "numeric"), modelarg("Simulation parameter", "numeric"), modelarg("Generate historic?", "boolean"), modelarg("Number of simulations", "numeric"), modelarg("Number of subprocesses", "numeric")),
+           c("G_G_S_INF_H_Y", "SimulatedModel"))
+exportToUI(G_G_INF, "G/G/INF",
+           list(modelarg("Arrival distribution", "distr"), modelarg("Service distribution", "distr"), modelarg("Stabilization parameter", "numeric"), modelarg("Simulation parameter", "numeric"), modelarg("Generate historic?", "boolean"), modelarg("Number of simulations", "numeric"), modelarg("Number of subprocesses", "numeric")),
+           c("G_G_INF", "SimulatedModel"))
+exportToUI(OpenNetwork, "Open Network",
+           list(modelarg("Arrival distribution at each node", "vdistr"), modelarg("Service distribution at each node", "vdistr"), modelarg("Servers at each node", "vector"), modelarg("Transition matrix", "matrix"), modelarg("Stabilization parameter", "numeric"), modelarg("Simulation parameter", "numeric"), modelarg("Generate historic?", "boolean"), modelarg("Number of simulations", "numeric"), modelarg("Number of subprocesses", "numeric")),
+           c("Open", "SimulatedNetwork", "SimulatedModel"))
+exportToUI(ClosedNetwork, "Closed Network",
+           list(modelarg("Service distribution at each node", "vdistr"), modelarg("Servers at each node", "vector"), modelarg("Transition matrix", "matrix"), modelarg("Number of customers", "numeric"), modelarg("Stabilization parameter", "numeric"), modelarg("Simulation parameter", "numeric"), modelarg("Generate historic?", "boolean"), modelarg("Number of simulations", "numeric"), modelarg("Number of subprocesses", "numeric")),
+           c("Closed", "SimulatedNetwork", "SimulatedModel"))
+
+initMenu <- list(
+  list(id = 0, title="Markovian models", submenu=generateMenu(uiList[sapply(sapply(uiList, class), function(v) {any(v=="MarkovianModel")}, simplify="array")])),
+  list(id = 0, title="Simulated Models", submenu=generateMenu(uiList[sapply(sapply(uiList, class), function(v) {any(v=="SimulatedModel")}, simplify="array")])),
+  list(id = length(uiList)+1, title="Data analysis", submenu=list()),
+  list(id = length(uiList)+2, title="Reports", submenu=list())
+)
+
+dataAnalysisModel <- reportModel <- list()
+class(dataAnalysisModel) <- "DataAnalysis"
+class(reportModel) <- "Report"
+
+firstTime <- TRUE
 shinyServer(function(input, output, session) {
-    options(shiny.usecairo=FALSE)
-    initMenu <- list(
-                  list(id = 0, title="Markovian models", submenu=generateMenu(uiList[sapply(sapply(uiList, class), function(v) {any(v=="MarkovianModel")}, simplify="array")])),
-                  list(id = 0, title="Simulated Models", submenu=generateMenu(uiList[sapply(sapply(uiList, class), function(v) {any(v=="SimulatedModel")}, simplify="array")])),
-                  list(id = length(uiList)+1, title="Data analysis", submenu=list()),
-                  list(id = length(uiList)+2, title="Reports", submenu=list())
-                )
-    isolate({
-      updateMenuInput(session, "menu", action=list("set"), menu=initMenu)
-      updateTabInput(session, "results", action=list("add"), value=list(newTab("Start", "Select a model in the menu at left to start.")), removeButton=TRUE)
-    })
-    dataAnalysisModel <- reportModel <- list()
-    class(dataAnalysisModel) <- "DataAnalysis"
-    class(reportModel) <- "Report"
-    observe({
-      if (!is.null(input$menu$clicked)){
+      options(shiny.usecairo=FALSE)
+      if(firstTime) {
+        print("Inicializando Menu")
         isolate({
-                id <- as.numeric(input$menu$selected)
-                if (id == 0)
-                    NULL
-                else if (id == length(uiList)+1)
-                  loadUIModel(dataAnalysisModel, session, input, output)
-                else if (id == length(uiList)+2)
-                  loadUIModel(reportModel, session, input, output)
-                else
-                  loadUIModel(uiList[[id]], session, input, output)
+          updateMenuInput(session, "menu", action=list("set"), menu=initMenu)
+          #'updateTabInput(session, "results", action=list("add"), value=list(newTab("Start", "Select a model in the menu at left to start.")), removeButton=TRUE)
         })
+        firstTime <<- FALSE
       }
-    })
+      observe({
+        if (!is.null(input$menu$clicked)){
+          isolate({
+                  id <- as.numeric(input$menu$selected)
+                  if (id == 0)
+                      NULL
+                  else if (id == length(uiList)+1)
+                    loadUIModel(dataAnalysisModel, session, input, output)
+                  else if (id == length(uiList)+2)
+                    loadUIModel(reportModel, session, input, output)
+                  else
+                    loadUIModel(uiList[[id]], session, input, output)
+          })
+        }
+      })
 })

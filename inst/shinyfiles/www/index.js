@@ -934,37 +934,60 @@ var mydatatableOutputBinding = new Shiny.OutputBinding();
         var colnames = $.makeArray(data.options.colnames);
       else 
         var colnames = $.makeArray(data.colnames);
-      var header = colnames.map(function(x, i) {
+      var header = $.map(colnames, function(x, i) {
         if (i==0 && data.options.hasOwnProperty("rowHeaders") && !data.options.rowHeaders) {
           if (x == "X_empty" || x===undefined)
             return '<th></th>';
         }
         return '<th><b>' + x + '</b></th>';
       }).join('');
+
       if (data.options.hasOwnProperty("mainTitle")) {
          header = '<thead><tr><th colspan='+ colnames.length  +' class="ui-state-default"><b>'+ data.options.mainTitle +'</b></th></tr><tr>' + header + '</tr></thead>';
       } else{
          header = '<thead><tr>' + header + '</tr></thead>';
       }
+      
+    var footer = '';
     if(!data.options.hasOwnProperty("noFooter")) {
-  	  var footer = colnames.map(function(x) {
-			return '<th><input type="text" placeholder="' + x + '" /></th>';
-		  }).join('');
-		  footer = '<tfoot>' + footer + '</tfoot>';
-	  } else {
-		  footer= "";
-	  }
+      if (data.options === null || data.options.searching !== false) {
+        footer = $.map(colnames, function(x) {
+          // placeholder needs to be escaped (and HTML tags are stripped off)
+          return '<th><input type="text" placeholder="' +
+                 escapeHTML(x.replace(/(<([^>]+)>)/ig, '')) +
+                 '" /></th>';
+        }).join('');
+        footer = '<tfoot>' + footer + '</tfoot>';
+      }
+    }
       var content = '<table class="table table-striped table-hover">' +
                     header + footer + '</table>';
       $el.append(content);
-      var oTable = $(el).children("table").dataTable($.extend({
+      
+       // options that should be eval()ed
+      if (data.evalOptions)
+        $.each(data.evalOptions, function(i, x) {
+          /*jshint evil: true */
+          data.options[x] = eval('(' + data.options[x] + ')');
+        });
+      // caseInsensitive searching? default true
+      var searchCI = data.options === null || typeof(data.options.search) === 'undefined' ||
+                     data.options.search.caseInsensitive !== false;
+      var oTable = $(el).children("table").DataTable($.extend({
         "processing": true,
         "serverSide": true,
         "order": [],
         "orderClasses": false,
         "pageLength": 25,
-        "ajax": data.action,
-        "initComplete": function() {
+        "ajax": {
+          "url": data.action,
+          "type": "POST",
+          "data": function(d) {
+            d.search.caseInsensitive = searchCI;
+            d.escape = data.escape;
+          }
+        },
+        "initComplete": function(settings, json) {
                              if (data.options.hasOwnProperty("rowHeaders") && data.options.rowHeaders) {
                                $(el).find("table tbody").find("tr").each(function(){
                                     var td = $(this).find("td").first();
@@ -976,6 +999,25 @@ var mydatatableOutputBinding = new Shiny.OutputBinding();
                           }
         }, data.options));
       
+      // the table object may need post-processing
+      if (typeof data.callback === 'string') {
+        /*jshint evil: true */
+        var callback = eval('(' + data.callback + ')');
+        if (typeof callback === 'function') callback(oTable);
+      }
+      
+      var searchInputs = $el.find("tfoot input");
+      if (searchInputs.length > 0) {
+        // this is a little weird: aoColumns/bSearchable are still in DT 1.10
+        // https://github.com/DataTables/DataTables/issues/388
+        $.each(oTable.settings()[0].aoColumns, function(i, x) {
+          // hide the text box if not searchable
+          if (!x.bSearchable) searchInputs.eq(i).hide();
+        });
+        searchInputs.keyup(debounce(data.searchDelay, function() {
+          oTable.column(searchInputs.index(this)).search(this.value).draw();
+        }));
+      }
       // FIXME: ugly scrollbars in tab panels b/c Bootstrap uses 'visible: auto'
       $el.parents('.tab-content').css('overflow', 'visible');
     }
@@ -1793,6 +1835,8 @@ Shiny.inputBindings.register(graphInputBinding, 'shiny.graphInputBinding');*/
 	};
  };
  
+ var clicksTemp= 0;
+ 
   //Creamos un InputBinding para las tabs de Jquery UI
   var tabInputBinding = new Shiny.InputBinding();
   $.extend(tabInputBinding, {
@@ -1814,24 +1858,7 @@ Shiny.inputBindings.register(graphInputBinding, 'shiny.graphInputBinding');*/
 	},
 	
 	subscribe: function(el, callback) {
-		var self = this;
-		$(el).on('updateTabsAdd.tabInputBinding', function(event) {
-      var dfd = $.Deferred();
-      dfd.done(function() {
-                  Shiny.unbindAll($(el).children("div:last"));
-               }).done( 
-               function() {
-                 $(el).tabs("refresh");
-                 
-               }).done(
-               function() {
-                 $(el).tabs("option", "active", self.infoTabs[$(el).attr("id")].size - 1);
-            		 Shiny.bindAll($(el).children("div:last"));
-            		 callback(false);
-               });
-      dfd.resolve();
-		});
-    
+		var self = this;    
 		$(el).on('updateTabsRemove.tabInputBinding', function(event) {
 			$(el).tabs("refresh");
 			callback(true);
@@ -1849,6 +1876,7 @@ Shiny.inputBindings.register(graphInputBinding, 'shiny.graphInputBinding');*/
 		var self = this;
 		if (data.hasOwnProperty("action")) {
 			if (data.action == "add") {
+        console.log("Agregando pestaña");
 				if (data.hasOwnProperty("value") && data.hasOwnProperty("removeButton")) {
 					var $ul = $el.find("ul:first");
 					for(var i=0; i < data.value.length; i++) {
@@ -1878,7 +1906,7 @@ Shiny.inputBindings.register(graphInputBinding, 'shiny.graphInputBinding');*/
 							$(this).on("click", function() {
 								$el.trigger("shown");
 							});
-						});
+						})
 						
 						$ul.find("a:last").each(function() {
 							$(this).on("click", function(event) {
@@ -1893,9 +1921,13 @@ Shiny.inputBindings.register(graphInputBinding, 'shiny.graphInputBinding');*/
               $el.css('overflow', 'scroll');
             }
             resizeColumns($("#" + $el.attr("id") + "-tag-" + tabObject.total));
-						$el.trigger('updateTabsAdd');
+            console.log("Actualizando Pestaña");
+						Shiny.unbindAll($el.children("div:last"));
+            $el.tabs("refresh");
+            $el.tabs("option", "active", self.infoTabs[$el.attr("id")].size - 1);
+            Shiny.bindAll($el.children("div:last"));
 					}	
-				}	
+				}
 			} else if (data.action == "reload") {
 				self._reloadTabs($el);
 			}
