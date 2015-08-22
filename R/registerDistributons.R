@@ -7,6 +7,7 @@ registerDistribution(Chisq, "Chi Square", TRUE)
 registerDistribution(Lnorm, "Log-Normal", TRUE)
 registerDistribution(Gammad, "Gamma", TRUE)
 registerDistribution(Dirac, "Dirac", TRUE)
+registerDistribution(Beta, "Beta", TRUE)
 
 #Here you can register your own distributions
 #registerDistribution(function(mate=30){Exp(mate)}, "My Exponential")

@@ -496,7 +496,7 @@ $.extend(selectVectorDistrInputBinding, {
       if (prevval == 0 || newval > prevval) {
         //Shiny.unbindAll(distrzone);
         for (i=(prevval+1); i<=newval; i++) {
-          distrzone.append("<label for='"+ id + "-select-"+i+"'><u><b>Node "+ i +":</b></u></label><select id='" + id + "-select-"+i+"' style='display:block; margin-top:15px;'></select>").append("<div id='" + id + "-distrInputs-" + i +"' style='display:inline; height:20px; width:auto;'></div>");
+          distrzone.append("<label for='"+ id + "-select-"+i+"'><u><b>Node "+ i +":</b></u></label><select id='" + id + "-select-"+i+"' style='display:block; margin-top:15px;'></select>").append("<div id='" + id + "-distrInputs-" + i +"' style='display:inline; height:auto; width:auto;'></div>");
           //Si hay cargada una lista de distribuciones (maestra, cargamos las <option> en el nuevo <select>
           if ((self.distributions[id] != undefined) && (self.distributions[id].hasOwnProperty("masterdistributions"))) {
             if (self.distributions[id][i-1] == undefined){
@@ -568,7 +568,7 @@ $.extend(selectDistrInputBinding, {
 		var selected = $(this).val();
 		var parameters = self.distributions[id][selected].params;
 		for(var i=0; i<parameters.length; i++) {
-			$("#distrInputs"+id).append("<label style='display:inline-block;margin-left:15px;'>"+parameters[i].name.capitalize()+ ": </label><input id='distrInput-"+parameters[i].name+ "-" + id + "' name='"+ parameters[i].name + "' value='"+ parameters[i].value +"' style='display:inline-block;width:4.5em;margin-left:5px;' type='number'/>");
+			$("#distrInputs"+id).append("<span style='display:inline-flex;'><label style='display:inline-block;margin-left:15px;'>"+parameters[i].name.capitalize()+ ": </label><input id='distrInput-"+parameters[i].name+ "-" + id + "' name='"+ parameters[i].name + "' value='"+ parameters[i].value +"' style='display:inline-block;width:4.5em;margin-left:5px;' type='number'/></span>");
 			$("#distrInput-"+parameters[i].name + "-" + id).on("change", {posparam:i}, function(event) {
         self.distributions[id][selected].params[event.data.posparam].value = $(this).val();
         callback(false);
@@ -603,7 +603,7 @@ $.extend(selectDistrInputBinding, {
 		this.distributions = new Array();
 		var id = $(el).attr("id");
     if (!this.distributions.hasOwnProperty(id)) {
-  		$(el).append("<select id='select" + id + "' style='display:inline'></select>").append("<div id='distrInputs" + id + "' style='display:inline-block; height:20px; width:auto;'></div>");
+  		$(el).append("<select id='select" + id + "' style='display:inline'></select>").append("<div id='distrInputs" + id + "' style='display:inline-block; height:auto; width:auto;'></div>");
     }
 	}
 });
@@ -700,10 +700,10 @@ $.extend(matrixInputBinding, {
 		  if (data.hasOwnProperty('value') && data.hasOwnProperty('size')) {
   			this._changeNodes(id, this, this.nodes[id], data.size);
     		this.nodes[id] = data.size;
-			for(var i=0; i<data.size; i++)
+        console.log(data.value);
+			for(var i=1; i<=data.size; i++)
 				for(var j=0; j<data.size; j++) {
-          console.log($("#"+id+"-table-"+(i+1)+"-"+(j+1)+"-input"));
-					$("#"+id+"-table-"+(i+1)+"-"+(j+1)+"-input").attr("value", data.value[i+1][j]).trigger("change");
+					$("#"+id+"-table-"+i+"-"+(j+1)+"-input").attr("value", data.value[j+1][i-1]).trigger("change");
 				}
 		  }
       $(el).trigger("send.matrixInputBinding");
@@ -929,7 +929,10 @@ var mydatatableOutputBinding = new Shiny.OutputBinding();
     },
     renderValue: function(el, data) {
       var $el = $(el).empty();
+      console.log(data);
       if (!data || !data.colnames) return;
+      if (data.options.hasOwnProperty("renderHTML") && data.options.renderHTML)
+        data.escape = false;
       if(data.options.hasOwnProperty("colnames")) 
         var colnames = $.makeArray(data.options.colnames);
       else 

@@ -1,3 +1,5 @@
+options(shiny.deprecation.messages=FALSE)
+
 toDatatable <- function(qm, ...) {UseMethod("toDatatable", qm)}
 
 toDatatable.MarkovianModel <- function(qm) {
@@ -37,10 +39,37 @@ toDatatable.SimulatedModel <- function(qm) {
                       "W"=sprintf("%5.4g", w$mean), "Wq"=sprintf("%5.4g", wq$mean), 
                       "Intensity"=sprintf("%5.4g", rho$mean), "Efficiency"=sprintf("%5.4g", eff$mean)))
     res <- rbind(res, with(qm$out,
-                           data.frame("_empty"="Error",
-                                      "L"=sprintf("%5.4g", l$error), "Lq"=sprintf("%5.4g", lq$error), 
-                                      "W"=sprintf("%5.4g", w$error), "Wq"=sprintf("%5.4g", wq$error), 
-                                      "Intensity"=sprintf("%5.4g", rho$error), "Efficiency"=sprintf("%5.4g", eff$error))))
+                           data.frame("_empty"="Sd",
+                                      "L"=sprintf("%5.4g", l$sd), "Lq"=sprintf("%5.4g", lq$sd), 
+                                      "W"=sprintf("%5.4g", w$sd), "Wq"=sprintf("%5.4g", wq$sd), 
+                                      "Intensity"=sprintf("%5.4g", rho$sd), "Efficiency"=sprintf("%5.4g", eff$sd))))
+    res <- rbind(res, with(qm$out,
+                           data.frame("_empty"="Median",
+                                      "L"=sprintf("%5.4g", l$summary[3]), "Lq"=sprintf("%5.4g", lq$summary[3]), 
+                                      "W"=sprintf("%5.4g", w$summary[3]), "Wq"=sprintf("%5.4g", wq$summary[3]), 
+                                      "Intensity"=sprintf("%5.4g", rho$summary[3]), "Efficiency"=sprintf("%5.4g", eff$summary[3]))))
+    res <- rbind(res, with(qm$out,
+                           data.frame("_empty"="Min",
+                                      "L"=sprintf("%5.4g", l$summary[1]), "Lq"=sprintf("%5.4g", lq$summary[1]), 
+                                      "W"=sprintf("%5.4g", w$summary[1]), "Wq"=sprintf("%5.4g", wq$summary[1]), 
+                                      "Intensity"=sprintf("%5.4g", rho$summary[1]), "Efficiency"=sprintf("%5.4g", eff$summary[1]))))
+    res <- rbind(res, with(qm$out,
+                           data.frame("_empty"="Max",
+                                      "L"=sprintf("%5.4g", l$summary[6]), "Lq"=sprintf("%5.4g", lq$summary[6]), 
+                                      "W"=sprintf("%5.4g", w$summary[6]), "Wq"=sprintf("%5.4g", wq$summary[6]), 
+                                      "Intensity"=sprintf("%5.4g", rho$summary[6]), "Efficiency"=sprintf("%5.4g", eff$summary[6]))))
+    res <- rbind(res, with(qm$out,
+                           data.frame("_empty"="1st Quartile",
+                                      "L"=sprintf("%5.4g", l$summary[2]), "Lq"=sprintf("%5.4g", lq$summary[2]), 
+                                      "W"=sprintf("%5.4g", w$summary[2]), "Wq"=sprintf("%5.4g", wq$summary[2]), 
+                                      "Intensity"=sprintf("%5.4g", rho$summary[2]), "Efficiency"=sprintf("%5.4g", eff$summary[2]))))
+    res <- rbind(res, with(qm$out,
+                           data.frame("_empty"="3rd Quartile",
+                                      "L"=sprintf("%5.4g", l$summary[5]), "Lq"=sprintf("%5.4g", lq$summary[5]), 
+                                      "W"=sprintf("%5.4g", w$summary[5]), "Wq"=sprintf("%5.4g", wq$summary[5]), 
+                                      "Intensity"=sprintf("%5.4g", rho$summary[5]), "Efficiency"=sprintf("%5.4g", eff$summary[5]))))    
+    
+    
   }
   return(res)
 }
@@ -52,13 +81,33 @@ toDatatable.Open <- function(qm) {
                            "W"=sprintf("%5.4g", w), "Wq"=sprintf("%5.4g", wq)))
   } else {
     res <- with(qm$out, 
-                data.frame("Mean"= 1:length(l$mean),
-                           "L"=sprintf("%5.4g", l$mean), "Lq"=sprintf("%5.4g", lq$mean),
-                           "W"=sprintf("%5.4g", w$mean), "Wq"=sprintf("%5.4g", wq$mean)))
+                data.frame("Info"= c("Mean", 1:length(l$mean)),
+                           "L"=c("", sprintf("%5.4g", l$mean)), "Lq"=c("", sprintf("%5.4g", lq$mean)),
+                           "W"=c("", sprintf("%5.4g", w$mean)), "Wq"=c("",sprintf("%5.4g", wq$mean))))
     res <- rbind(res, with(qm$out,
-                           data.frame("Mean"=c("Error", 1:length(l$mean)),
-                                      "L"=c("", sprintf("%5.4g", l$error)), "Lq"=c("", sprintf("%5.4g", lq$error)),
-                                      "W"=c("", sprintf("%5.4g", w$error)), "Wq"=c("", sprintf("%5.4g", wq$error)))))
+                           data.frame("Info"=c("Sd", 1:length(l$mean)),
+                                      "L"=c("", sprintf("%5.4g", l$sd)), "Lq"=c("", sprintf("%5.4g", lq$sd)),
+                                      "W"=c("", sprintf("%5.4g", w$sd)), "Wq"=c("", sprintf("%5.4g", wq$sd)))))
+    res <- rbind(res, with(qm$out,
+                           data.frame("Info"=c("Median", 1:length(l$mean)),
+                                      "L"=c("", sprintf("%5.4g", l$summary[3,])), "Lq"=c("", sprintf("%5.4g", lq$summary[3,])),
+                                      "W"=c("", sprintf("%5.4g", w$summary[3,])), "Wq"=c("", sprintf("%5.4g", wq$summary[3,])))))
+    res <- rbind(res, with(qm$out,
+                           data.frame("Info"=c("Min", 1:length(l$mean)),
+                                      "L"=c("", sprintf("%5.4g", l$summary[1,])), "Lq"=c("", sprintf("%5.4g", lq$summary[1,])),
+                                      "W"=c("", sprintf("%5.4g", w$summary[1,])), "Wq"=c("", sprintf("%5.4g", wq$summary[1,])))))
+    res <- rbind(res, with(qm$out,
+                           data.frame("Info"=c("Max", 1:length(l$mean)),
+                                      "L"=c("", sprintf("%5.4g", l$summary[6,])), "Lq"=c("", sprintf("%5.4g", lq$summary[6,])),
+                                      "W"=c("", sprintf("%5.4g", w$summary[6,])), "Wq"=c("", sprintf("%5.4g", wq$summary[6,])))))
+    res <- rbind(res, with(qm$out,
+                           data.frame("Info"=c("1st Quartile", 1:length(l$mean)),
+                                      "L"=c("", sprintf("%5.4g", l$summary[2,])), "Lq"=c("", sprintf("%5.4g", lq$summary[2,])),
+                                      "W"=c("", sprintf("%5.4g", w$summary[2,])), "Wq"=c("", sprintf("%5.4g", wq$summary[2,])))))
+    res <- rbind(res, with(qm$out,
+                           data.frame("Info"=c("3rd Quartile", 1:length(l$mean)),
+                                      "L"=c("", sprintf("%5.4g", l$summary[5,])), "Lq"=c("", sprintf("%5.4g", lq$summary[5,])),
+                                      "W"=c("", sprintf("%5.4g", w$summary[5,])), "Wq"=c("", sprintf("%5.4g", wq$summary[5,])))))
   }
   return(res)
 }
@@ -942,7 +991,7 @@ generateReport <- function(reportData, qm, numTab) {
                                       rep.menu <- paste(rep.menu, "<li><a href='javascript:void(0);' name='", reportData$title, "-", reportData$nReports, "-waitingplots'>Waiting Plots</a></li>", sep="")
 #                                      R2HTML::HTML(paste("<li><a href='report_main.html#", reportData$title, "-waitingplots' target='main'>Waiting Plots</a></li>", sep=""), file=menu)
                                       outfile <- tempfile(fileext='.png')
-                                      summaryWtWqt(qm, seq(section$data$from, section$data$to, by=section$data$step))
+                                      plot(qm, seq(section$data$from, section$data$to, by=section$data$step), only="t")
                                       ggplot2::ggsave(outfile, width=11, height=6.5, dpi=75)
                                       rep.body <- paste(rep.body, base64::img(outfile), sep="")
 #                                     R2HTML::HTML(paste("<center><img src='./plots/", basename(outfile), "'></img></center>", sep=""), file=target)
@@ -953,7 +1002,7 @@ generateReport <- function(reportData, qm, numTab) {
                                           rep.menu <- paste(rep.menu, "<li><a href='javascript:void(0);' name='", reportData$title, "-",reportData$nReports, "-probabilitiesplot'>Probabilities Plot</a></li>", sep="")
 #                                          R2HTML::HTML(paste("<li><a href='report_main.html#", reportData$title, "-probabilitiesplot' target='main'>Probabilities Plot</a></li>", sep=""), file=menu)
                                          outfile <- tempfile(fileext='.png')
-                                         summaryPnQn(qm, seq(section$data$from, section$data$to, 1))
+                                         plot(qm, seq(section$data$from, section$data$to, 1), only="n")
                                          ggplot2::ggsave(outfile, width=11, height=6.5, dpi=75)
                                          rep.body <- paste(rep.body, base64::img(outfile), sep="")
 #                                         R2HTML::HTML(paste("<center><img src='./plots/", basename(outfile), "' alt='test'></img></center>", sep=""), file=target)
@@ -1136,7 +1185,7 @@ loadUIModel.MarkovianModel <- function(model, session, input, output, parameters
                                                      "isolate({\n",
                                                          "pnqnrange <- range(input$PnQnMin", numTab, ", input$PnQnMax", numTab, ")\n",
                                                      "})\n", 
-                                                     "summaryPnQn(values$qm, seq(pnqnrange[1], pnqnrange[2], 1))\n",
+                                                     "plot(values$qm, seq(pnqnrange[1], pnqnrange[2], 1), only='n')\n",
                                                      "ggplot2::ggsave(outfile, width=11, height=6.5, dpi=100)\n",
                                                      "title <- 'Pn: Steady-state probability of having n customers in the system.\n'\n",
                                                      "try({Qn(values$qm, 0); title <- paste(title, 'Qn: Steady-state probability of finding n customers in the system when a new customer arrives.', sep='')})\n",
@@ -1146,7 +1195,7 @@ loadUIModel.MarkovianModel <- function(model, session, input, output, parameters
                                                     "if(is.null(values$qm)) stop(values$error)\n",
                                                     "isolate({\n",
                                                       "wtwqtrange <- range(input$WtWqtMin", numTab, ", input$WtWqtMax", numTab, ")\n",
-                                                      "summaryWtWqt(values$qm, seq(wtwqtrange[1], wtwqtrange[2], by=input$WtWqtStep", numTab, "))\n",
+                                                      "plot(values$qm, seq(wtwqtrange[1], wtwqtrange[2], by=input$WtWqtStep", numTab, "), only='t')\n",
                                                     "})\n", 
                                                     "ggplot2::ggsave(outfile, width=11, height=6.5, dpi=100)\n",
                                                     "list(src=outfile, alt='Loading plot...', title='W: Distribution function of the waiting time in the system.\nWq: Distribution function of the waiting time in the queue.')}, deleteFile=TRUE)\n",
@@ -1154,19 +1203,19 @@ loadUIModel.MarkovianModel <- function(model, session, input, output, parameters
                                         "if (is.null(values$qm)) stop(values$error)\n",
                                          "return()\n",
                                   "})\n",
-      "output$summaryDatatable", numTab, "<- renderDataTable({if (is.null(values$qm)) stop(values$error)\n",
+      "output$summaryDatatable", numTab, "<- shiny::renderDataTable({if (is.null(values$qm)) stop(values$error)\n",
                                                               "isolate({\n",
                                                                   "toDatatable(values$qm)\n",
                                                               "})\n",
                                                              "},escape=FALSE, options=list(jQueryUI=TRUE, dom='rt', searching=FALSE, ordering=FALSE, noFooter=NULL, mainTitle=isolate({class(values$qm)[1]})))\n",
-      "output$pnDatatable", numTab, "<- renderDataTable({input$CalculateButton", input$results$total, "\n",
+      "output$pnDatatable", numTab, "<- shiny::renderDataTable({input$CalculateButton", input$results$total, "\n",
                                                         "if (is.null(values$qm)) stop(values$error)\n",
                                                         "isolate({\n",
                                                             "datatablePnQn(values$qm, range(input$PnQnMin", numTab, ", input$PnQnMax", numTab, "))\n",
                                                         "})\n",
                                         "}, escape=FALSE, options = list(jQueryUI=TRUE, searching=FALSE, ordering=FALSE, pagingType='full_numbers', pageLength=10, orderClasses = TRUE, noFooter=NULL))\n",
       
-      "output$wtDatatable", numTab, "<- renderDataTable({input$CalculateButton", input$results$total, "\n",
+      "output$wtDatatable", numTab, "<- shiny::renderDataTable({input$CalculateButton", input$results$total, "\n",
                                                         "if (is.null(values$qm)) stop(values$error)\n",
                                                         "isolate({\n",
                                                            "datatableWtWqt(values$qm, range(input$WtWqtMin", numTab, ", input$WtWqtMax", numTab, "), input$WtWqtStep", numTab, ")\n",
@@ -1248,13 +1297,13 @@ loadUIModel.OpenJackson <- function(model, session, input, output, parameters=NU
                                 "if (is.null(values$qm)) stop(values$error)\n",
                                 "return()\n",
                                 "})\n",
-    "output$summaryDatatable", numTab, "<- renderDataTable({\n",
+    "output$summaryDatatable", numTab, "<- shiny::renderDataTable({\n",
                                         "if (is.null(values$qm)) stop(values$error)\n",
                                         "isolate({\n",
                                           "toDatatable(values$qm)\n",
                                         "})\n",
                                         "}, options=list(jQueryUI=TRUE, dom='rt', searching=FALSE, ordering=FALSE, noFooter=NULL, mainTitle=isolate({class(values$qm)[1]}), rowHeaders=TRUE))\n",
-    "output$probDatatable", numTab, "<- renderDataTable({\n",
+    "output$probDatatable", numTab, "<- shiny::renderDataTable({\n",
                                       "if (is.null(values$qm)) return()\n",
                                       "ns <- ''\n",
                                       "for (i in input$pn1nk", numTab, "[-length(input$pn1nk",numTab, ")])\n",
@@ -1365,13 +1414,13 @@ loadUIModel.ClosedJackson <- function(model, session, input, output, parameters=
                                     "if (is.null(values$qm)) stop(values$error)\n",
                                     "return()\n",
                                   "})\n",
-      "output$summaryDatatable", numTab, "<- renderDataTable({\n",
+      "output$summaryDatatable", numTab, "<- shiny::renderDataTable({\n",
                               "if (is.null(values$qm)) return(data.frame())\n",
                               "isolate({\n",
                                   "toDatatable(values$qm)\n",
                               "})\n",
                               "}, options=list(jQueryUI=TRUE, dom='rt', searching=FALSE, ordering=FALSE, noFooter=NULL, mainTitle=isolate({class(values$qm)[1]}), rowHeaders=TRUE))\n",
-      "output$probDataTable", numTab, "<- renderDataTable({\n",
+      "output$probDataTable", numTab, "<- shiny::renderDataTable({\n",
                 "if (is.null(values$qm)) stop(values$error)\n",
                 "ns <- ''\n",
                 "for (i in input$pn1nk", numTab, "[-length(input$pn1nk",numTab, ")])\n",
@@ -1379,7 +1428,7 @@ loadUIModel.ClosedJackson <- function(model, session, input, output, parameters=
                 "ns <- paste(ns, input$pn1nk", numTab, "[length(input$pn1nk", numTab, ")], sep='')\n",
                 "data.frame(paste('P(', ns, ')', sep=''), sprintf('%9.5g', Pn(values$qm, input$pn1nk", numTab, ")))\n",
                "}, options=list(jQueryUI=TRUE, dom='rt', searching=FALSE, ordering=FALSE, noFooter=NULL, rowHeaders=TRUE, colnames=c('Combined Probabilites', 'Value')))\n",
-      "output$pnDiv", numTab, "<- renderDataTable({\n",
+      "output$pnDiv", numTab, "<- shiny::renderDataTable({\n",
                                      "if (is.null(values$qm)) return(data.frame())\n",
                                      "if (input$CalculateButton", numTab, ">= 0){\n",
                                         "isolate({\n",
@@ -1422,6 +1471,7 @@ loadUIModel.ClosedJackson <- function(model, session, input, output, parameters=
         "isolate({\n",
            "skipfrominputfile <<-TRUE\n",
            "updateNumericInput(session, 'numNodes", numTab, "', value=numnodes)\n",
+           "print(inputdata[3:(2+numnodes),])\n",
            "updateVectorInput(session, 'mu", numTab, "', value=as.numeric(inputdata[1,]))\n",
            "updateVectorInput(session, 's", numTab, "', value=as.numeric(inputdata[2,]))\n",
            "updateMatrixInput(session, 'p", numTab, "', value=inputdata[3:(2+numnodes),], size=numnodes)\n",
@@ -1442,6 +1492,7 @@ loadUIModel.SimulatedModel <- function(model, session, input, output, parameters
   eval(parse(text=paste("nsim <- input$nsim", numTab, sep="")))
   eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Convergence', '", selectInput(inputId=paste("convergenceSelector", input$results$total, sep=""), label=tags$b("Select a variable:"), choices=c("L"="L", "Lq"="Lq", "W"="W", "Wq"="Wq", "Clients"="Clients", "Intensity" = "Intensity")),"<input id=\"simulationInput", numTab, "\" class=\"myNumberInputBinding\" type=\"number\" value=1 min=1 max=", nsim," ></input><div id=\"errorConvergence", numTab, "\" class=\"shiny-html-output\"></div><div id=\"convergenceDiv", numTab, "\" class=\"shiny-image-output\"></div>')))\n", sep="")))
   eval(parse(text=paste("updateTabInput(session, 'ModelOutputTabs", numTab , "', action=list('add'), value=list(newTab('Summary', '<div id=\"summaryDatatable", numTab, "\" class=\"shiny-mydatatable-output\"></div>')))\n", sep="")))
+  
   updateSaveReportInput(session, paste('saveReport', numTab, sep=""), disable=TRUE)
   updateSelectDistrInput(session=session, inputId=paste("arrivalDistribution", numTab, sep=""), distributions=selectDistr(WithNoArrivals=FALSE))
   updateSelectDistrInput(session, paste("serviceDistribution", numTab, sep=""), selectDistr(WithNoArrivals=FALSE))
@@ -1483,8 +1534,8 @@ loadUIModel.SimulatedModel <- function(model, session, input, output, parameters
                              "}\n",
                         "})\n", 
                         "observe({\n",
-                          "values$qm\n",
-                          "output$summaryDatatable", numTab, "<- renderDataTable({\n",
+                          "values$qm\n",                          
+                          "output$summaryDatatable", numTab, "<- shiny::renderDataTable({\n",
                                   "if (is.null(values$qm) && buttonvalue==0) stop(values$error)\n",
                                   "if (is.null(values$qm) && buttonvalue> 0) stop(values$error)\n",
                                   "isolate({\n", 
@@ -1599,12 +1650,12 @@ loadUIModel.Open <- function(model, session, input, output, parameters=NULL) {
                         "})\n",
                         "observe({\n",
                            "values$qm\n",
-                           "output$summaryDatatable", numTab, "<- renderDataTable({\n",
+                           "output$summaryDatatable", numTab, "<- shiny::renderDataTable({\n",
                                  "if (is.null(values$qm) && buttonvalue >= 0) stop(values$error)\n",
                                  "isolate({\n", 
                                    "toDatatable(combineSimulations(values$qm))\n",
                                  "})\n",
-                           "}, options=list(jQueryUI=TRUE, dom='rt', searching=FALSE, ordering=FALSE, noFooter=NULL, mainTitle=isolate({if(class(values$qm)[1] == 'list'){class(values$qm[[1]])[1]}else{class(values$qm)[1]}}), rowHeaders=TRUE))\n",   
+                           "}, options=list(jQueryUI=TRUE, dom='rtp', searching=FALSE, ordering=FALSE, noFooter=NULL, mainTitle=isolate({if(class(values$qm)[1] == 'list'){class(values$qm[[1]])[1]}else{class(values$qm)[1]}}), rowHeaders=TRUE))\n",   
                         "})\n",
                         "output$networkDiv", numTab, "<- renderNetwork({\n",
                           "if (is.null(values$qm) && buttonvalue==0) stop()\n",
@@ -1693,12 +1744,12 @@ loadUIModel.Closed <- function(model, session, input, output, parameters=NULL) {
                         "})\n",
                         "observe({\n",
                           "values$qm\n",
-                          "output$summaryDatatable", numTab, "<- renderDataTable({\n",
+                          "output$summaryDatatable", numTab, "<- shiny::renderDataTable({\n",
                              "if (is.null(values$qm) && buttonvalue >= 0) stop(values$error)\n",
                              "isolate({\n", 
                                "toDatatable(combineSimulations(values$qm))\n",
                              "})\n",
-                           "}, options=list(jQueryUI=TRUE, dom='rt', searching=FALSE, ordering=FALSE, noFooter=NULL, mainTitle=isolate({if(class(values$qm)[1] == 'list'){class(values$qm[[1]])[1]}else{class(values$qm)[1]}}), rowHeaders=TRUE))\n",   
+                           "}, options=list(jQueryUI=TRUE, dom='rtp', searching=FALSE, ordering=FALSE, pagingType='full_numbers', pageLength=25, noFooter=NULL, mainTitle=isolate({if(class(values$qm)[1] == 'list'){class(values$qm[[1]])[1]}else{class(values$qm)[1]}}), rowHeaders=TRUE))\n",   
                         "})\n",
                         "output$networkDiv", numTab, "<- renderNetwork({\n",
                             "if (is.null(values$qm) && buttonvalue==0) stop()\n",
@@ -1775,23 +1826,22 @@ loadUIModel.DataAnalysis <- function(model, session, input, output) {
                               "})\n",
                             "}\n",
                         "})\n",
-                        "output$summaryDatatable", numTab, "<- renderDataTable({\n",
+                        "output$summaryDatatable", numTab, "<- shiny::renderDataTable({\n",
                             "if (is.null(values$fit)) stop(values$error)\n",
                             "isolate({\n", 
                                "goodnessFit(values$fit)\n",
                             "})\n",
                           "}, options=list(jQueryUI=TRUE, dom='rt', searching=FALSE, ordering=FALSE, noFooter=NULL, mainTitle='Goodness of fit', rowHeaders=TRUE, colnames=c('Distributions/Statistics', 'Chi Square Statistic', 'Chi Square p-value', 'Kolmogorov-Smirnov Statistic', 'Kolmogorov-Smirnov p-value')))\n",   
-                        "output$estimationsDatatable", numTab, "<- renderDataTable({\n",
+                        "output$estimationsDatatable", numTab, "<- shiny::renderDataTable({\n",
                             "if (is.null(values$fit)) stop(values$error)\n",
                            #"print(input$ModelOutputTabs", numTab, "$selected)\n",
                             "isolate({\n", 
-                                 #Creamos los Observe para los botones de guardar las estimacions
                               "valuescopy <- values$fit\n",
                               "if (!is.null(valuescopy$unif))\n",
                                   "names(valuescopy$unif$estimate) <- c('Min', 'Max')\n",
                               "dataFit <- toDatatable(valuescopy, ", numTab,")\n",
                             "})\n",
-                        "}, options=list(jQueryUI=TRUE, dom='rt', searching=FALSE, ordering=FALSE, noFooter=NULL, colnames=c('Fitted distributions', '')))\n", 
+                        "}, options=list(jQueryUI=TRUE, dom='rt', searching=FALSE, ordering=FALSE, noFooter=NULL, colnames=c('Fitted distributions', ''), renderHTML=TRUE))\n", 
                         "output$cumulativeDiv", numTab, "<- renderImage({\n",
                             "if (is.null(values$fit)) stop(values$error)\n",
                             "outfile <- tempfile(fileext='.svg')\n",
@@ -1813,6 +1863,7 @@ loadUIModel.DataAnalysis <- function(model, session, input, output) {
                           "ggplot2::ggsave(outfile, width=11, height=6.5, dpi=100)\n",
                           "list(src=outfile, alt='Loading plot...', title='')
                         }, deleteFile=TRUE)\n", 
+                        #Creamos los Observe para los botones de guardar las estimaciones
                         "observe({\n",
                             "for(i in values$buttons) {\n",
                                 "aux <- paste('observe({\n', 

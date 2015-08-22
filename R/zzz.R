@@ -12,6 +12,7 @@
   
   pkg.info <- drop( read.dcf( file = system.file("DESCRIPTION", package = "arqas"),
                               fields = c("Title", "Version", "Date") ))
+  
   packageStartupMessage( 
     paste("\n Loading package arqasgui:", pkg.info["Title"], "\n"),
     paste(" version ", pkg.info["Version"], " (built on ", pkg.info["Date"], ").\n", sep=""),
